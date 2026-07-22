@@ -11,6 +11,6 @@
    cahier des charges V4 Partie 7 / fichier _headers). Modifiez uniquement
    les valeurs ci-dessous avant tout déploiement.
    ========================================================================== */
-window.YUKI_API_BASE = "https://yukitraderpro-backend.onrender.com/api";             // same-origin sur yukitraderpro.com (proxifié vers le backend, voir netlify.toml) — cookie de refresh HttpOnly plus simple à sécuriser qu'en cross-origin
+window.YUKI_API_BASE = "https://yukitraderpro-backend-v2.onrender.com/api";             // same-origin sur yukitraderpro.com (proxifié vers le backend, voir netlify.toml) — cookie de refresh HttpOnly plus simple à sécuriser qu'en cross-origin
 window.YUKI_FIREBASE_CONFIG = null;        // ex. { apiKey:"...", projectId:"...", messagingSenderId:"...", appId:"..." }
 window.YUKI_VAPID_PUBLIC_KEY = "";         // clé publique VAPID du projet Firebase (Cloud Messaging > Certificats web push)
