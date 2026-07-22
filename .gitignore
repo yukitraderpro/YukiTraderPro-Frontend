@@ -1,0 +1,20 @@
+# Clés de signature Android — ne JAMAIS committer (voir twa/keystore/README.md)
+twa/keystore/*.keystore
+twa/keystore/*.jks
+twa/keystore/*.p12
+
+# Secrets backend
+backend/.env
+*.env
+!*.env.example
+
+# Build/deps
+node_modules/
+dist/
+backend/node_modules/
+
+# Gradle
+twa/android-project/.gradle/
+twa/android-project/build/
+twa/android-project/app/build/
+twa/android-project/local.properties

@@ -1,0 +1,33 @@
+{
+  "packageId": "com.yukitraderpro.app",
+  "host": "yukitraderpro.com",
+  "name": "Yuki Trader Pro",
+  "launcherName": "Yuki Trader",
+  "display": "standalone",
+  "themeColor": "#0f172a",
+  "navigationColor": "#0f172a",
+  "backgroundColor": "#0f172a",
+  "startUrl": "/",
+  "iconUrl": "https://yukitraderpro.com/icon-512.png",
+  "maskableIconUrl": "https://yukitraderpro.com/icon-512.png",
+  "shortcuts": [],
+  "signingKey": {
+    "path": "./keystore/android-release.keystore",
+    "alias": "yuki-trader-pro",
+    "_comment": "Fichier non fourni par Claude — à générer en local par le propriétaire, voir twa/keystore/README.md"
+  },
+  "appVersionName": "4.0.0",
+  "appVersionCode": 1,
+  "webManifestUrl": "https://yukitraderpro.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    },
+    "pushMessaging": {
+      "enabled": true
+    }
+  },
+  "enableNotifications": true,
+  "_comment": "Domaine réel connecté (yukitraderpro.com). Vérifier que dist/production/ y est bien déployé avant de builder l'app Android."
+}

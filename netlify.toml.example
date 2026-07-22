@@ -1,0 +1,30 @@
+# ==============================================================================
+# Exemple de configuration Netlify — Yuki Trader Pro V4 (yukitraderpro.com)
+# --------------------------------------------------------------------------
+# À copier vers `netlify.toml` (à la racine du dépôt déployé).
+#
+# Domaine réel du frontend : yukitraderpro.com (déjà connecté dans config.js
+# via window.YUKI_API_BASE = "/api", same-origin).
+#
+# ⚠️ SEUL POINT ENCORE À DÉCIDER : où sera hébergé le backend Node
+# (backend/) — Render, Railway, Fly.io, VPS... Une fois choisi et déployé,
+# remplacez l'URL cible ci-dessous par la vraie adresse de cet hébergement
+# (le proxy /api/* → backend reste same-origin côté navigateur, donc le
+# cookie HttpOnly du refresh token continue de fonctionner en
+# SameSite=Strict sans souci CORS, quel que soit l'hébergeur choisi pour le
+# backend lui-même).
+# ==============================================================================
+
+[build]
+  publish = "dist/production"
+  command = "npm run build:prod"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://backend.yukitraderpro.com/api/:splat"
+  status = 200
+  force = true
+
+# Sécurité : le fichier _headers (généré dans dist/production/ par le build)
+# est lu automatiquement par Netlify — aucune configuration supplémentaire
+# n'est nécessaire ici pour les en-têtes CSP/HSTS/etc.

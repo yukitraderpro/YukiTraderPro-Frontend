@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Yuki Trader Pro</string>
+    <string name="launcher_name">Yuki Trader</string>
+
+    <!-- Domaine réel connecté : yukitraderpro.com. -->
+    <string name="host_placeholder">yukitraderpro.com</string>
+    <string name="default_url">https://yukitraderpro.com/</string>
+
+    <!-- ⚠️ Empreinte SHA-256 À COMPLÉTER : Claude ne génère plus jamais de
+         keystore/clé de signature (consigne du propriétaire). Générez votre
+         propre keystore en local (voir twa/keystore/README.md), puis
+         remplacez la valeur ci-dessous par l'empreinte réelle obtenue avec :
+         keytool -list -v -keystore VOTRE-KEYSTORE -alias VOTRE-ALIAS -->
+    <string name="asset_statements">
+        [{
+          \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+          \"target\": {
+            \"namespace\": \"android_app\",
+            \"package_name\": \"com.yukitraderpro.app\",
+            \"sha256_cert_fingerprints\": [\"REMPLACER_PAR_L_EMPREINTE_SHA256_DE_VOTRE_KEYSTORE_LOCAL\"]
+          }
+        }]
+    </string>
+</resources>

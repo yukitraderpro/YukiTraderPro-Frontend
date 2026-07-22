@@ -1,0 +1,221 @@
+/* ==========================================================================
+   ⚠️ NON UTILISÉ PAR L'INTÉGRATION STANDARD DE CETTE APP (RC2) ⚠️
+   --------------------------------------------------------------------------
+   L'intégration réellement utilisée par Yuki Trader Pro passe par la
+   Digital Goods API + Payment Request API, directement en JavaScript
+   (voir launchSubscriptionFlow() dans app.js et twa/BillingBridge.md) —
+   c'est le chemin officiellement documenté par Google pour une Trusted Web
+   Activity, qui s'exécute dans un Chrome Custom Tab et n'a PAS de WebView
+   embarquée. Le code ci-dessous, basé sur addJavascriptInterface(), ne
+   fonctionnerait donc PAS tel quel dans la TWA de ce projet.
+
+   Il est conservé uniquement comme référence pour un scénario différent :
+   un wrapper Android avec une vraie WebView embarquée (et non une TWA),
+   architecture qu'il faudrait choisir consciemment (avec ses compromis :
+   maintenance de la WebView, mises à jour de sécurité à gérer soi-même,
+   etc.) plutôt que la TWA actuelle.
+   ========================================================================== */
+
+/* ==========================================================================
+   Exemple de référence — Pont Billing Android (WebView) ↔ Web
+   --------------------------------------------------------------------------
+   Ceci est un exemple de code, NON COMPILÉ ni testé (aucun SDK Android
+   disponible dans l'environnement où ce projet a été préparé — voir
+   Difficultes_YukiTraderPro_V3.md et RAPPORT_RC1.md). Il sert de point de
+   départ concret pour l'implémentation réelle, à adapter et tester dans
+   Android Studio avec la Play Billing Library.
+
+   Contrat exact à respecter (voir twa/BillingBridge.md) :
+   1. Le WebView de la TWA doit exposer un objet JS `window.AndroidBilling`
+      avec une méthode `launchPurchase()`, via `@JavascriptInterface`.
+   2. Au clic, Android lance le flux d'achat natif (BillingClient).
+   3. Une fois l'achat confirmé par Google, Android appelle LUI-MÊME
+      POST {YUKI_API_BASE}/api/billing/verify-purchase (jamais le JS web) —
+      c'est ce qui garantit que Google Play reste l'unique source de vérité
+      (cahier des charges V4, Partie 2).
+   4. Après vérification réussie côté serveur, Android exécute
+      `window.onYukiPurchaseComplete()` dans le WebView pour que l'UI se
+      resynchronise avec le rôle/abonnement réel.
+   5. Le cookie HttpOnly de session (refresh token) est géré nativement par
+      le WebView Chrome de la TWA — aucune manipulation de token nécessaire
+      côté Android pour l'authentification (voir section correspondante de
+      BillingBridge.md).
+   ========================================================================== */
+
+package com.yukitraderpro.app.billing
+
+import android.app.Activity
+import android.webkit.JavascriptInterface
+import android.webkit.WebView
+import com.android.billingclient.api.*
+import kotlinx.coroutines.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+
+/**
+ * IDs produits Google Play — DOIVENT correspondre exactement à ceux créés
+ * dans Play Console (Monétisation > Abonnements) et au backend
+ * (subscriptionOffersService.js) — voir twa/BillingBridge.md, tableau
+ * "Produits Google Play".
+ */
+private val SUBSCRIPTION_PRODUCT_IDS = listOf(
+    "yuki_pro_founder_monthly",
+    "yuki_pro_standard_monthly"
+)
+
+class YukiBillingBridge(
+    private val activity: Activity,
+    private val webView: WebView,
+    private val apiBaseUrl: String,      // ex. "https://yukitraderpro.com"
+    private val getAccessToken: () -> String?, // fournit le JWT de la session en cours
+) : PurchasesUpdatedListener {
+
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val httpClient = OkHttpClient()
+
+    private val billingClient: BillingClient = BillingClient.newBuilder(activity)
+        .setListener(this)
+        .enablePendingPurchases()
+        .build()
+
+    /** Exposé au JS de la page via `webView.addJavascriptInterface(bridge, "AndroidBilling")`. */
+    @JavascriptInterface
+    fun launchPurchase() {
+        scope.launch {
+            try {
+                val offerId = fetchRecommendedOfferId() // GET /api/billing/offers (public)
+                launchBillingFlowFor(offerId)
+            } catch (e: Exception) {
+                // Remonter une erreur lisible côté web si besoin :
+                webView.post {
+                    webView.evaluateJavascript(
+                        "window.alert && window.alert(${JSONObject.quote(e.message ?: "Erreur d'achat.")})",
+                        null
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun fetchRecommendedOfferId(): String = withContext(Dispatchers.IO) {
+        val req = Request.Builder().url("$apiBaseUrl/api/billing/offers").build()
+        httpClient.newCall(req).execute().use { resp ->
+            val body = JSONObject(resp.body?.string() ?: "{}")
+            val offers = body.optJSONArray("offers")
+            // Choisit la première offre avec des places restantes (ou illimitée),
+            // exactement comme documenté dans BillingBridge.md.
+            for (i in 0 until (offers?.length() ?: 0)) {
+                val o = offers!!.getJSONObject(i)
+                val seatsRemaining = if (o.isNull("seatsRemaining")) null else o.getInt("seatsRemaining")
+                if (seatsRemaining == null || seatsRemaining > 0) {
+                    return@withContext o.getString("productId") // ou l'ID technique équivalent
+                }
+            }
+            SUBSCRIPTION_PRODUCT_IDS.last() // repli sur l'offre Standard
+        }
+    }
+
+    private suspend fun launchBillingFlowFor(productId: String) {
+        val params = QueryProductDetailsParams.newBuilder()
+            .setProductList(
+                listOf(
+                    QueryProductDetailsParams.Product.newBuilder()
+                        .setProductId(productId)
+                        .setProductType(BillingClient.ProductType.SUBS)
+                        .build()
+                )
+            ).build()
+
+        billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+            if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) return@queryProductDetailsAsync
+            val productDetails = productDetailsList.firstOrNull() ?: return@queryProductDetailsAsync
+            val offerToken = productDetails.subscriptionOfferDetails?.firstOrNull()?.offerToken ?: return@queryProductDetailsAsync
+
+            val flowParams = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(
+                    listOf(
+                        BillingFlowParams.ProductDetailsParams.newBuilder()
+                            .setProductDetails(productDetails)
+                            .setOfferToken(offerToken)
+                            .build()
+                    )
+                ).build()
+
+            billingClient.launchBillingFlow(activity, flowParams)
+        }
+    }
+
+    /** Callback Play Billing standard : appelé quand un achat est confirmé/annulé. */
+    override fun onPurchasesUpdated(billingResult: BillingResult, purchases: MutableList<Purchase>?) {
+        if (billingResult.responseCode != BillingClient.BillingResponseCode.OK || purchases == null) return
+        for (purchase in purchases) {
+            scope.launch { verifyPurchaseOnBackend(purchase) }
+        }
+    }
+
+    /**
+     * Étape critique (Partie 2 du cahier des charges V4) : c'est CE code
+     * Android, jamais le JavaScript de la page, qui appelle verify-purchase.
+     * Le rôle "pro" de l'utilisateur n'est jamais décidé par le client.
+     */
+    private suspend fun verifyPurchaseOnBackend(purchase: Purchase) = withContext(Dispatchers.IO) {
+        val token = getAccessToken() ?: return@withContext
+        val productId = purchase.products.firstOrNull() ?: return@withContext
+
+        val payload = JSONObject().apply {
+            put("purchaseToken", purchase.purchaseToken)
+            put("subscriptionId", productId)
+        }
+        val body = payload.toString().toRequestBody("application/json".toMediaType())
+        val req = Request.Builder()
+            .url("$apiBaseUrl/api/billing/verify-purchase")
+            .addHeader("Authorization", "Bearer $token")
+            .post(body)
+            .build()
+
+        httpClient.newCall(req).execute().use { resp ->
+            if (!resp.isSuccessful) return@use
+            val result = JSONObject(resp.body?.string() ?: "{}")
+            if (result.optString("status") == "active") {
+                // Obligatoire sous 3 jours (voir BillingBridge.md), sans quoi
+                // Google rembourse automatiquement l'utilisateur.
+                if (!purchase.isAcknowledged) {
+                    val ackParams = AcknowledgePurchaseParams.newBuilder()
+                        .setPurchaseToken(purchase.purchaseToken)
+                        .build()
+                    billingClient.acknowledgePurchase(ackParams) { }
+                }
+            }
+            // Le rôle/abonnement est déjà mis à jour côté serveur par cette
+            // route. On resynchronise simplement l'UI web :
+            withContext(Dispatchers.Main) {
+                webView.evaluateJavascript(
+                    "window.onYukiPurchaseComplete && window.onYukiPurchaseComplete()",
+                    null
+                )
+            }
+        }
+    }
+}
+
+/* ==========================================================================
+   Câblage dans l'Activity hébergeant la TWA (exemple minimal) :
+
+   billingBridge = YukiBillingBridge(
+       activity = this,
+       webView = webView,
+       apiBaseUrl = "https://yukitraderpro.com",
+       getAccessToken = { currentSessionAccessToken } // à fournir par votre code d'auth Android
+   )
+   webView.settings.javaScriptEnabled = true
+   webView.addJavascriptInterface(billingBridge, "AndroidBilling")
+
+   Dépendances Gradle nécessaires (non ajoutées ici, à adapter selon les
+   versions à jour au moment de l'implémentation réelle) :
+     implementation("com.android.billingclient:billing-ktx:<version>")
+     implementation("com.squareup.okhttp3:okhttp:<version>")
+     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:<version>")
+   ========================================================================== */

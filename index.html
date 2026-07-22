@@ -1,0 +1,590 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a"><meta name="description" content="Yuki Trader Pro 4.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yuki Trader">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="css/yuki-assistant.css">
+<title>Yuki Trader Pro 4.0</title>
+<script src="config.js"></script>
+</head><body>
+
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="lang-switch">
+      <button class="lang-btn" data-lang="fr">FR</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
+    <p class="eyebrow">YUKI TRADER PRO · V4.0</p>
+    <h1 data-i18n="appName">Yuki Trader Pro</h1>
+    <p class="muted" data-i18n="tagline">Les indicateurs travaillent, vous voyez la décision.</p>
+
+    <div class="auth-tabs">
+      <button data-auth-goto="login" class="auth-tab-btn" data-i18n="login">Connexion</button>
+      <button data-auth-goto="signup" class="auth-tab-btn" data-i18n="signup">Créer un compte</button>
+    </div>
+
+    <form id="authMode-login" class="auth-mode active">
+      <label><span data-i18n="email">E-mail</span><input id="loginEmail" type="email" required autocomplete="username"></label>
+      <label><span data-i18n="password">Mot de passe</span><input id="loginPassword" type="password" required autocomplete="current-password"></label>
+      <button type="submit" class="primary full" data-i18n="loginBtn">Se connecter</button>
+      <button type="button" class="full link-btn" data-auth-goto="forgot" data-i18n="forgotLink">Mot de passe oublié ?</button>
+    </form>
+
+    <form id="authMode-signup" class="auth-mode">
+      <label><span data-i18n="email">E-mail</span><input id="signupEmail" type="email" required autocomplete="username"></label>
+      <label><span data-i18n="password">Mot de passe</span><input id="signupPassword" type="password" required minlength="6" autocomplete="new-password"></label>
+      <p class="muted tiny" id="trialOfferHint" data-i18n="trialOfferHint">Essai gratuit de 7 jours, puis abonnement Pro (voir Réglages pour le tarif en vigueur).</p>
+      <button type="submit" class="primary full" data-i18n="signupBtn">Créer mon compte</button>
+      <button type="button" class="full link-btn" data-auth-goto="login" data-i18n="signupAltLink">Déjà un compte ? Se connecter</button>
+    </form>
+
+    <form id="authMode-forgot" class="auth-mode">
+      <label><span data-i18n="email">E-mail</span><input id="forgotEmail" type="email" required></label>
+      <label><span data-i18n="newPassword">Nouveau mot de passe</span><input id="forgotNewPassword" type="password" required minlength="6"></label>
+      <button type="submit" class="primary full" data-i18n="resetBtn">Réinitialiser le mot de passe</button>
+      <button type="button" class="full link-btn" data-auth-goto="login" data-i18n="backToLogin">Retour à la connexion</button>
+    </form>
+
+    <p id="authError" class="auth-error"></p>
+  </div>
+</div>
+
+<div class="app hidden-card">
+<header><div><p class="eyebrow">YUKI TRADER PRO · V4.0</p><h1 data-i18n="appName">Yuki Trader Pro</h1>
+<p class="muted" id="accountEmailBadge"></p><p id="founderBadge" class="founder-badge hidden-card">🚀 Membre Fondateur</p></div><button id="installBtn" class="install-ready" data-i18n="installBtn">Installer Yuki</button></header>
+<div id="subscriptionBanner" class="sub-banner hidden-card"></div>
+<div id="apiStatus" class="status offline" data-i18n="apiKeyMissing">Clé API absente</div>
+
+<section id="keyOnboarding" class="card onboarding">
+<h2 data-i18n="onboardingTitle">Activer le marché réel</h2><p data-i18n="onboardingDesc">Colle ta clé Twelve Data. Elle reste uniquement sur ce téléphone.</p>
+<label><span data-i18n="apiKeyLabel">Clé API</span><input id="onboardingKey" type="password" autocomplete="off" placeholder="Clé Twelve Data" data-i18n-ph="onboardingKeyPh"></label>
+<button id="onboardingSave" class="primary full" data-i18n="onboardingSaveBtn">Enregistrer et tester</button>
+</section>
+
+<main>
+<section id="home" class="panel active">
+<div class="card">
+<div class="item-head"><h2 data-i18n="dashboardTitle">Tableau de bord</h2><button id="refreshOpportunitiesBtn" data-i18n="refresh">Actualiser</button></div>
+<div id="yukiHomeBanner" class="yuki-home-banner" role="button" tabindex="0" aria-label="Ouvrir l'assistant Yuki">
+  <span class="yuki-avatar-badge yuki-avatar-badge-sm"><img src="assets/images/yuki/yuki-avatar-64.png?v=20260719d" alt=""></span>
+  <span data-i18n="yukiHomeBannerText">Besoin d'aide pour comprendre l'application ? Demande à Yuki.</span>
+</div>
+<div id="yukiSmartSummary" class="yuki-smart-summary hidden-card">
+  <span class="yuki-avatar-badge"><img src="assets/images/yuki/yuki-avatar-64.png?v=20260719d" alt=""></span>
+  <p id="yukiSmartSummaryText"></p>
+</div>
+<div class="dashboard-grid">
+<div class="dashboard-card">
+<div class="item-head"><strong data-i18n="marketStateTitle">État du marché</strong></div>
+<div id="marketStateBox"><small class="muted" data-i18n="tapRefreshHint">Appuie sur Actualiser.</small></div>
+</div>
+<div class="dashboard-card">
+<div class="item-head"><strong data-i18n="aiScoreTitle">Score IA</strong></div>
+<div id="aiScoreBox"><small class="muted">—</small></div>
+</div>
+</div>
+<h2 style="margin-top:14px" data-i18n="opportunityTitle">Opportunité du moment</h2>
+<div id="homeOpportunityBox" class="list"><div class="item muted" data-i18n="opportunityHint">Appuie sur Actualiser pour lancer l'analyse.</div></div>
+<h2 style="margin-top:14px" data-i18n="recentAlertsTitle">Alertes récentes</h2>
+<div id="homeAlertsBox" class="list"></div>
+<h2 style="margin-top:14px" data-i18n="top5Title">Top 5</h2>
+<div id="homeTop5Box" class="list"></div>
+</div>
+<div class="card">
+<label><span data-i18n="searchLabel">Rechercher par nom, ISIN ou code courtier</span>
+<input id="globalSearch" placeholder="Ex. NVIDIA, US67066G1040, NVDA.US" data-i18n-ph="searchPh"></label>
+<div id="searchResults" class="search-results"></div>
+<label><span data-i18n="instrumentLabel">Instrument</span><select id="instrumentSelect"></select></label>
+<div class="horizon-picker">
+<button class="horizon active" data-horizon="1h" data-i18n="horizonShort">Court terme</button>
+<button class="horizon" data-horizon="4h" data-i18n="horizonSwing">Swing</button>
+<button class="horizon" data-horizon="1day" data-i18n="horizonTrend">Tendance</button>
+</div>
+<button id="analyseBtn" class="primary full" data-i18n="analyseNow">Analyser maintenant</button>
+<div id="signalBox" class="signal hold"><small data-i18n="signalLabel">SIGNAL</small><strong id="signalText">—</strong></div>
+<div class="grid">
+<div><span data-i18n="fieldName">Nom</span><strong id="name">—</strong></div><div><span data-i18n="fieldIsin">ISIN</span><strong id="isin">—</strong></div>
+<div><span data-i18n="fieldBroker">Code courtier</span><strong id="xtb">—</strong></div><div><span data-i18n="fieldType">Type</span><strong id="kind">—</strong></div>
+<div><span data-i18n="fieldPrice">Prix</span><strong id="price">—</strong></div><div><span data-i18n="fieldConfidence">Confiance</span><strong id="confidence">—</strong></div>
+<div><span data-i18n="aiScoreTitle">Score IA</span><strong id="aiScoreValue">—</strong></div><div><span data-i18n="fieldRisk">Niveau de risque</span><strong id="riskLevel">—</strong></div>
+<div class="expert-only"><span data-i18n="fieldQuality">Qualité</span><strong id="quality">—</strong></div><div class="expert-only"><span data-i18n="fieldRegime">Régime</span><strong id="regime">—</strong></div>
+</div>
+<div id="simpleAiCard" class="item copilot-card">
+  <div class="item-head"><strong data-i18n="aiSummaryTitle">🧭 Résumé IA</strong></div>
+  <p id="simpleAiSummary" class="reason" data-i18n="aiSummaryPlaceholder">Choisis un instrument pour lancer l'analyse.</p>
+  <p id="simpleAiSuggestion" class="reason"><strong>—</strong></p>
+</div>
+<p id="reason" class="reason expert-only" data-i18n="reasonPlaceholder">Choisis un instrument.</p>
+<div id="copilotCard" class="item copilot-card hidden-card expert-only">
+  <div class="item-head"><strong data-i18n="copilotTitle">🤖 Copilote IA</strong><span class="muted tiny" data-i18n="copilotSubtitle">Synthèse locale, pas un LLM</span></div>
+  <p id="copilotText" class="reason"></p>
+</div>
+<div class="expert-only">
+<h2 style="margin-top:14px" data-i18n="scenariosTitle">Scénarios</h2>
+<div id="scenariosBox" class="scenario-grid"></div>
+</div>
+<div class="risk-box"><div class="expert-only"><span data-i18n="stopLabel">Stop indicatif</span><strong id="stop">—</strong></div><div><span data-i18n="targetLabel">Objectif indicatif</span><strong id="target">—</strong></div><div class="expert-only"><span data-i18n="rrLabel">Ratio potentiel</span><strong id="rr">—</strong></div></div>
+<div id="executionConfirmBox" class="execution-confirm hidden-card">
+  <label class="execution-check">
+    <input id="executedCheckbox" type="checkbox">
+    <span data-i18n="executedCheckLabel">J’ai réellement exécuté ce signal sur mon compte de trading</span>
+  </label>
+  <div id="executionFields" class="execution-fields hidden-card">
+    <label><span data-i18n="executedPriceLabel">Prix réellement exécuté</span>
+      <input id="executedPrice" type="number" step="any" placeholder="Prix d’entrée" data-i18n-ph="executedPricePh">
+    </label>
+    <label><span data-i18n="positionTypeLabel">Type de position</span>
+      <select id="executedSide">
+        <option value="BUY" data-i18n="buyLong">Achat / position longue</option>
+        <option value="SELL" data-i18n="sellShort">Vente / position courte</option>
+      </select>
+    </label>
+    <button id="confirmExecutedBtn" class="primary full" data-i18n="confirmPositionBtn">Enregistrer cette position</button>
+  </div>
+  <p class="muted tiny" data-i18n="executionHint">Yuki ne vérifie pas ton compte. Cette case sert uniquement à mémoriser ce que tu déclares avoir fait.</p>
+</div>
+
+<div class="toolbar"><button id="favoriteBtn" data-i18n="favoriteBtn">☆ Favori</button><span id="lastUpdate" class="muted" data-i18n="lastUpdatePlaceholder">Dernière mise à jour : —</span></div>
+<canvas id="chart"></canvas>
+</div>
+</section>
+
+<section id="scanner" class="panel">
+<div class="card"><h2 data-i18n="scannerTitle">Scanner sectoriel</h2>
+<div class="toolbar"><label><span data-i18n="sectorLabel">Secteur</span><select id="sectorFilter"></select></label><label><span data-i18n="typeLabel">Type</span><select id="typeFilter"><option value="" data-i18n="typeAll">Tous</option><option>Action</option><option>ETF</option><option>CFD</option></select></label></div>
+<label><span data-i18n="instrumentCountLabel">Nombre d’instruments</span><select id="scanCount"><option value="10">10</option><option value="20" selected>20</option><option value="30">30</option></select></label>
+<button id="scanBtn" class="primary full" data-i18n="scanBtn">Scanner</button><p id="scanProgress" class="muted" data-i18n="ready">Prêt.</p></div>
+<div id="ranking" class="list"></div>
+</section>
+
+
+<section id="explorer" class="panel">
+  <div class="card">
+    <h2 data-i18n="explorerTitle">Explorateur mondial Twelve Data</h2>
+    <p class="muted" data-i18n="explorerDesc">Recherche à la demande parmi les instruments proposés par le fournisseur. Les résultats externes ne possèdent pas toujours d’ISIN ni de code courtier vérifié.</p>
+    <label><span data-i18n="nameOrSymbolLabel">Nom ou symbole</span>
+      <input id="worldSearchInput" placeholder="Ex. Nvidia, Airbus, EUR/USD, gold…" data-i18n-ph="worldSearchPh">
+    </label>
+    <button id="worldSearchBtn" class="primary full" data-i18n="worldSearchBtn">Rechercher dans le monde</button>
+    <p id="worldSearchStatus" class="muted" data-i18n="ready">Prêt.</p>
+    <div id="worldResults" class="list"></div>
+  </div>
+  <div class="card">
+    <h2 data-i18n="customCatalogTitle">Instruments ajoutés localement</h2>
+    <div id="customCatalog" class="list"></div>
+  </div>
+</section>
+
+<section id="sectors" class="panel"><div class="card"><div class="item-head"><h2 data-i18n="sectorMapTitle">Carte des secteurs</h2><button id="sectorScanBtn" class="primary" data-i18n="updateBtn">Mettre à jour</button></div><div id="sectorMap" class="sector-map"></div></div></section>
+
+<section id="favorites" class="panel"><div class="card"><div class="item-head"><h2 data-i18n="favoritesTitle">Favoris</h2><button id="scanFavoritesBtn" class="primary" data-i18n="analyseShort">Analyser</button></div><div id="favoritesList" class="list"></div></div></section>
+
+<section id="positions" class="panel">
+<div class="card"><h2 data-i18n="positionsTitle">Positions déclarées et sorties CFD</h2><label><span data-i18n="instrumentLabel">Instrument</span><select id="positionInstrument"></select></label>
+<label><span data-i18n="sideLabel">Sens</span><select id="positionSide"><option value="BUY" data-i18n="buy">Achat</option><option value="SELL" data-i18n="sell">Vente</option></select></label>
+<label><span data-i18n="entryPriceLabel">Prix d’entrée</span><input id="entryPrice" type="number" step="any"></label>
+<label><span data-i18n="riskPctLabel">Risque maximum souhaité (%)</span><input id="positionRisk" type="number" min="0.1" max="10" step="0.1" value="1"></label>
+<button id="addPositionBtn" class="primary full" data-i18n="addWatchBtn">Ajouter la surveillance</button></div>
+<div class="item-head"><h2 data-i18n="trackingTitle">Suivi</h2><button id="refreshPositionsBtn" data-i18n="refresh">Actualiser</button></div>
+<div id="positionsList" class="list"></div>
+</section>
+
+
+<section id="markets" class="panel">
+<div class="card">
+<h2 data-i18n="marketsTitle">Marchés</h2>
+<p class="muted" data-i18n="marketsDesc">Actions, ETF, CFD, Forex, Indices, matières premières et crypto — analyse par classe d'actif.</p>
+<div class="toolbar">
+  <button data-market-class="Action" data-i18n="classAction">Actions</button>
+  <button data-market-class="ETF" data-i18n="classETF">ETF</button>
+  <button data-market-class="Forex" data-i18n="classForex">Forex</button>
+  <button data-market-class="Indices" data-i18n="classIndices">Indices</button>
+  <button data-market-class="Matières premières" data-i18n="classCommodities">Matières premières</button>
+  <button data-market-class="Crypto" data-i18n="classCrypto">Crypto</button>
+</div>
+<label><span data-i18n="instrumentCountLabel">Nombre d'instruments</span><select id="marketScanCount"><option value="10">10</option><option value="25" selected>25</option><option value="40">40</option></select></label>
+<p id="marketScanProgress" class="muted" data-i18n="chooseClassHint">Choisis une classe d'actifs ci-dessus.</p>
+</div>
+<div id="marketRanking" class="list"></div>
+</section>
+
+<section id="etf" class="panel">
+<div class="card">
+<h2 data-i18n="etfTitle">ETF thématiques</h2>
+<p class="muted"><span data-i18n="etfDescPrefix">IA, Tech, Cloud, Semi-conducteurs, Cybersécurité, Robotique, Santé, Énergie, Finance, Monde. Catalogue actuel : </span><span id="etfCount"></span><span data-i18n="etfDescSuffix"> ETF suivis — le catalogue s'enrichit en continu (objectif 300+, voir README).</span></p>
+<label><span data-i18n="analyzedCountLabel">Nombre analysé</span><select id="etfScanCount"><option value="20">20</option><option value="40" selected>40</option><option value="80">80</option></select></label>
+<button id="etfScanBtn" class="primary full" data-i18n="analyzeEtfBtn">Analyser les ETF</button>
+<p id="etfScanProgress" class="muted" data-i18n="ready">Prêt.</p>
+</div>
+<div id="etfRanking" class="list"></div>
+</section>
+
+<section id="options" class="panel">
+<div class="card module-preview">
+<div class="item-head"><h2 data-i18n="optionsTitle">Options</h2><span class="coming-soon-badge" data-i18n="comingSoonBadge">Module en préparation</span></div>
+<p class="muted" data-i18n="optionsDesc">Ce module s'activera automatiquement dès qu'un fournisseur de données d'options et un courtier compatible seront connectés à ton compte. Aucune configuration n'est nécessaire de ton côté pour l'instant.</p>
+<div class="module-preview-grid">
+<div data-i18n="callsLabel">Calls</div><div data-i18n="putsLabel">Puts</div><div data-i18n="greeksLabel">Greeks</div><div data-i18n="expiriesLabel">Échéances</div><div data-i18n="aiScoreTitle">Score IA</div><div data-i18n="optionChainLabel">Chaîne d'options</div>
+</div>
+</div>
+</section>
+
+<section id="journal" class="panel">
+<div class="card"><h2 data-i18n="journalTitle">Journal de trading</h2>
+<p class="muted" data-i18n="journalDesc">Chaque position clôturée depuis « Positions CFD » est enregistrée ici automatiquement, avec le résultat réel déclaré par toi.</p>
+<div class="stats-grid">
+<div><span data-i18n="closedTradesLabel">Trades clôturés</span><strong id="journalTrades">0</strong></div>
+<div><span data-i18n="winRateLabel">Taux de réussite</span><strong id="journalWinRate">—</strong></div>
+<div><span data-i18n="avgPnlLabel">PnL moyen</span><strong id="journalAvgPnl">—</strong></div>
+<div><span data-i18n="bestTradeLabel">Meilleur trade</span><strong id="journalBest">—</strong></div>
+<div><span data-i18n="worstTradeLabel">Pire trade</span><strong id="journalWorst">—</strong></div>
+</div>
+</div>
+<div id="journalList" class="list"></div>
+</section>
+
+<section id="csv" class="panel">
+<div class="card" id="csvServerGate">
+<h2 data-i18n="csvImportTitle">Importer un CSV</h2>
+<p class="muted" data-i18n="csvServerGateDesc">Ce module nécessite le mode serveur (voir Réglages) : tes fichiers importés sont propres à ton compte, isolés de tout autre utilisateur.</p>
+</div>
+
+<div class="card" id="csvWizardCard" style="display:none">
+<h2 data-i18n="csvStep1Title">1. Choisir la source et la destination</h2>
+<label><span data-i18n="sourceLabel">Source</span><select id="csvSource">
+  <option value="tradingview" data-i18n="csvSourceTv">TradingView</option>
+  <option value="broker" data-i18n="csvSourceBroker">Courtier</option>
+  <option value="portfolio" data-i18n="csvSourcePortfolio">Portefeuille</option>
+  <option value="watchlist" data-i18n="csvSourceWatchlist">Watchlist</option>
+  <option value="custom" data-i18n="csvSourceCustom">Format personnalisé</option>
+</select></label>
+<label><span data-i18n="destinationLabel">Destination</span><select id="csvDestination">
+  <option value="portfolio" data-i18n="csvDestPortfolio">Portefeuille</option>
+  <option value="positions" data-i18n="csvDestPositions">Positions</option>
+  <option value="favorites" data-i18n="csvDestFavorites">Favoris</option>
+  <option value="watchlist" data-i18n="csvDestWatchlist">Watchlist</option>
+  <option value="journal" data-i18n="csvDestJournal">Journal</option>
+  <option value="custom_db" data-i18n="csvDestCustomDb">Base personnalisée</option>
+</select></label>
+<label><span data-i18n="csvFileLabel">Fichier CSV</span><input id="csvFileInput" type="file" accept=".csv,.tsv,.txt"></label>
+<button id="csvUploadBtn" class="primary full" data-i18n="csvUploadBtn">Analyser le fichier</button>
+<p class="muted tiny" id="csvUploadStatus"></p>
+</div>
+
+<div class="card" id="csvPreviewCard" style="display:none">
+<h2 data-i18n="csvStep2Title">2. Aperçu et association des colonnes</h2>
+<p class="muted tiny" id="csvPreviewSummary"></p>
+<div id="csvPreviewTable" class="list"></div>
+<h2 style="margin-top:14px" data-i18n="csvMapFieldsTitle">Associer chaque colonne à un champ Yuki</h2>
+<div id="csvMappingFields"></div>
+<label><span data-i18n="duplicateLabel">En cas de doublon</span>
+<select id="csvDuplicateStrategy">
+  <option value="ignore" data-i18n="duplicateIgnore">Ignorer (garder l'existant)</option>
+  <option value="replace" data-i18n="duplicateReplace">Remplacer</option>
+  <option value="merge" data-i18n="duplicateMerge">Fusionner</option>
+  <option value="create_new" data-i18n="duplicateCreateNew">Créer une nouvelle entrée</option>
+</select></label>
+<div class="toolbar">
+  <button id="csvConfirmBtn" class="primary" data-i18n="confirmImportBtn">Confirmer l'import</button>
+  <button id="csvCancelBtn" data-i18n="cancelBtn">Annuler</button>
+</div>
+</div>
+
+<div class="card" id="csvReportCard" style="display:none">
+<h2 data-i18n="csvStep3Title">3. Rapport d'import</h2>
+<div id="csvReportBox" class="stats-grid"></div>
+<div id="csvReportErrors" class="list"></div>
+</div>
+
+<div class="card">
+<div class="item-head"><h2 data-i18n="filterImportedTitle">Filtrer mes données importées</h2><button id="csvRowsRefreshBtn" data-i18n="refresh">Actualiser</button></div>
+<label><span data-i18n="tickerLabel">Ticker</span><input id="csvFilterTicker" placeholder="Ex. NVDA"></label>
+<label><span data-i18n="sourceLabel">Source</span><select id="csvFilterSource"><option value="" data-i18n="csvFilterAll">Toutes</option><option value="tradingview" data-i18n="csvSourceTv">TradingView</option><option value="broker" data-i18n="csvSourceBroker">Courtier</option><option value="portfolio" data-i18n="csvSourcePortfolio">Portefeuille</option><option value="watchlist" data-i18n="csvSourceWatchlist">Watchlist</option><option value="custom" data-i18n="csvFilterCustom">Personnalisé</option></select></label>
+<button id="csvApplyFiltersBtn" class="full" data-i18n="filterBtn">Filtrer</button>
+<div id="csvRowsList" class="list"></div>
+</div>
+
+<div class="card">
+<div class="item-head"><h2 data-i18n="importHistoryTitle">Historique des imports</h2><button id="csvHistoryRefreshBtn" data-i18n="refresh">Actualiser</button></div>
+<p class="muted tiny" data-i18n="importHistoryDesc">Une suppression globale place l'import dans une corbeille restaurable pendant 30 jours. Une suppression « fichier seul » conserve les lignes déjà importées.</p>
+<div id="csvHistoryList" class="list"></div>
+</div>
+</section>
+
+<section id="portfolio" class="panel">
+<div class="card"><h2 data-i18n="portfolioTitle">Portefeuille</h2>
+<p class="muted" data-i18n="portfolioDesc">Vue d'ensemble de tes positions ouvertes (CFD suivies + position Scalping active). Yuki ne se connecte à aucun courtier : ces chiffres reflètent uniquement ce que tu as déclaré.</p>
+<div class="stats-grid">
+<div><span data-i18n="openPositionsLabel">Positions ouvertes</span><strong id="portfolioOpenCount">0</strong></div>
+<div><span data-i18n="unrealizedPnlLabel">PnL non réalisé (indicatif)</span><strong id="portfolioUnrealized">—</strong></div>
+</div>
+<h2 style="margin-top:14px" data-i18n="allocationTitle">Répartition par classe d'actif</h2>
+<div id="portfolioAllocation" class="grid"></div>
+</div>
+<div id="portfolioList" class="list"></div>
+</section>
+
+<section id="scalping" class="panel">
+<div class="card scalping-hero" data-requires-pro>
+<div class="item-head"><div><h2 data-i18n="scalpingTitle">Mode Scalping Pro</h2><p class="muted" data-i18n="scalpingDesc">Actualisation toutes les 60 secondes, un seul actif.</p></div>
+<label class="switch"><input id="scalpingToggle" type="checkbox"> <span data-i18n="activateLabel">Activer</span></label></div>
+<label><span data-i18n="activeAssetLabel">Actif</span><select id="scalpingInstrument"></select></label><small class="muted" data-i18n="scalpingHint">Analyse 1 minute · suivi de position toutes les 15 secondes.</small>
+<button id="scalpingAnalyseBtn" class="primary full" data-i18n="analyseNow">Analyser maintenant</button>
+<div id="scalpingSignalBox" class="signal hold"><small data-i18n="scalpingLabel">SCALPING</small><strong id="scalpingSignal">ATTENDRE</strong></div>
+<div class="scalp-levels">
+<div><span data-i18n="entrySuggestedLabel">Entrée suggérée</span><strong id="scalpEntry">—</strong></div>
+<div><span data-i18n="stopLabel">Stop</span><strong id="scalpStop">—</strong></div>
+<div><span data-i18n="target1Label">Objectif 1</span><strong id="scalpTarget1">—</strong></div>
+<div><span data-i18n="target2Label">Objectif 2</span><strong id="scalpTarget2">—</strong></div>
+<div><span data-i18n="scoreLabel">Score Yuki</span><strong id="scalpScore">—</strong></div>
+<div><span data-i18n="validityLabel">Validité</span><strong id="scalpValidity">—</strong></div>
+</div>
+<p id="scalpReason" class="reason" data-i18n="scalpReasonPlaceholder">Active le mode scalping puis lance l’analyse.</p>
+<canvas id="scalpChart" width="720" height="260"></canvas>
+<div id="scalpExecutionBox" class="execution-confirm hidden-card">
+<label class="execution-check"><input id="scalpExecutedCheckbox" type="checkbox"><span data-i18n="scalpExecutedLabel">J’ai pris cette position</span></label>
+<div id="scalpExecutionFields" class="execution-fields hidden-card">
+<label><span data-i18n="executedPriceLabel">Prix réellement exécuté</span><input id="scalpExecutedPrice" type="number" step="any"></label>
+<button id="scalpConfirmBtn" class="primary full" data-i18n="startTrackingBtn">Démarrer le suivi</button>
+</div></div></div>
+<div class="card"><div class="item-head"><h2 data-i18n="trackedPositionTitle">Position scalping suivie</h2><button id="refreshScalpPositionBtn" data-i18n="refresh">Actualiser</button></div>
+<div id="scalpPositionStatus" class="item muted" data-i18n="noScalpPosition">Aucune position scalping suivie.</div></div>
+</section>
+
+<section id="stats" class="panel"><div class="stats-grid">
+<div><span data-i18n="statSignalsLabel">Signaux</span><strong id="statSignals">0</strong></div><div><span data-i18n="statBuyLabel">Acheter</span><strong id="statBuy">0</strong></div>
+<div><span data-i18n="statSellLabel">Vendre</span><strong id="statSell">0</strong></div><div><span data-i18n="statHoldLabel">Attendre</span><strong id="statHold">0</strong></div>
+<div><span data-i18n="statConfidenceLabel">Confiance moyenne</span><strong id="statConfidence">—</strong></div><div><span data-i18n="statEvaluatedLabel">Évalués</span><strong id="statEvaluated">0</strong></div>
+<div><span data-i18n="statWinRateLabel">Taux de réussite (évalués)</span><strong id="statWinRate">—</strong></div>
+</div>
+<div class="card"><p class="muted tiny" data-i18n="evalExplanation">Un signal ACHETER/VENDRE est évalué automatiquement (gagnant/perdant/neutre selon le mouvement de prix réel) dès que tu consultes à nouveau cet instrument, un délai après l'émission du signal — Yuki ne fait pas d'appel réseau supplémentaire rien que pour évaluer, afin de préserver le quota API gratuit.</p></div>
+<div class="card expert-only"><h2 data-i18n="weightsTitle">Fiabilité des indicateurs (pondération dynamique)</h2><p class="muted tiny" data-i18n="weightsDesc">Chaque indicateur part d'un poids neutre (0%). Il monte quand il a voté dans le sens des signaux gagnants, il descend dans le cas contraire — jamais de valeur inventée, uniquement mesurée sur tes signaux évalués.</p><div id="indicatorWeightsList" class="list"></div></div>
+<div class="card expert-only"><div class="item-head"><h2 data-i18n="signalsJournalTitle">Journal des signaux</h2><button id="clearSignalsBtn" data-i18n="clearBtn">Effacer</button></div><div id="signalHistory" class="list"></div></div></section>
+
+<section id="settings" class="panel">
+<div class="card"><h2 data-i18n="account">Compte</h2>
+<p class="muted" id="settingsAccountEmail"></p>
+<p id="settingsSubscriptionLine" class="muted"></p>
+<button id="subscribeBtn" class="primary full" data-i18n="subscribe">S'abonner</button>
+<p class="muted tiny" id="subscribeOfferDetail"></p>
+<div id="founderOfferCard" class="founder-offer-card hidden-card">
+  <p class="founder-offer-title">🚀 Offre <span id="founderOfferName">Fondateur</span></p>
+  <p class="founder-offer-price"><strong id="founderOfferPrice">—</strong>/mois à vie*</p>
+  <p class="tiny muted">(*tant que l'abonnement reste actif)</p>
+  <p class="founder-offer-seats" id="founderOfferSeats"></p>
+</div>
+<button id="logoutBtn" class="full" data-i18n="logout">Se déconnecter</button>
+</div>
+<div class="card"><h2 data-i18n="modeDisplayTitle">Mode d'affichage</h2>
+<p class="muted tiny" data-i18n="modeDisplayDesc">Mode Simple : uniquement l'essentiel (signal, score IA, confiance, risque, prix, objectif, résumé et suggestion IA). Mode Expert : toutes les données disponibles (RSI, MACD, EMA, ATR, ADX, Bollinger, scénarios, journal des signaux…). Le moteur d'analyse et les signaux restent identiques dans les deux modes — seul l'affichage change, instantanément.</p>
+<div class="toolbar">
+  <button id="uiModeSimpleBtn" class="mode-btn" data-ui-mode="simple" data-i18n="uiModeSimpleBtnLabel">Mode Simple</button>
+  <button id="uiModeExpertBtn" class="mode-btn" data-ui-mode="expert" data-i18n="uiModeExpertBtnLabel">Mode Expert</button>
+</div>
+</div>
+<div class="card"><h2 data-i18n="languageTitle">Langue / Language</h2>
+<div class="toolbar">
+  <button class="lang-btn" data-lang="fr">Français</button>
+  <button class="lang-btn" data-lang="en">English</button>
+</div>
+</div>
+<div class="card"><h2 data-i18n="apiKeyTitle">Clé Twelve Data</h2><label><span data-i18n="apiKeyLabel">Clé API</span><input id="apiKeyInput" type="password" autocomplete="off"></label>
+<div class="toolbar"><button id="saveApiKeyBtn" class="primary" data-i18n="save">Enregistrer</button><button id="deleteApiKeyBtn" data-i18n="deleteBtn">Supprimer</button></div>
+<button id="testApiBtn" class="primary full" data-i18n="testBtn">Tester</button><p id="keyStatus" class="muted"></p></div>
+<div class="card"><h2 data-i18n="alertsTitle">Alertes</h2><label class="switch"><input id="autoScanToggle" type="checkbox"> <span data-i18n="autoScanLabel">Analyse automatique quand l’application reste ouverte</span></label>
+<label><span data-i18n="intervalLabel">Intervalle</span><select id="autoInterval"><option value="300000">5 minutes</option><option value="600000">10 minutes</option><option value="900000">15 minutes</option></select></label>
+<label><span data-i18n="minConfidenceLabel">Confiance minimale</span><input id="notifyThreshold" type="number" min="55" max="95"></label>
+<label><span data-i18n="minQualityLabel">Qualité minimale pour être notifié</span>
+<select id="minQualityGrade"><option value="D" data-i18n="qualityDAndUp">D et plus (tout signal)</option><option value="C" data-i18n="qualityCAndUp">C et plus</option><option value="B" data-i18n="qualityBAndUp">B et plus</option><option value="A" data-i18n="qualityAOnly">A et A+ uniquement</option><option value="A+" data-i18n="qualityAPlusOnly">A+ uniquement</option></select></label>
+<label><span data-i18n="antiSpamLabel">Anti-spam : délai minimal avant une nouvelle alerte identique</span>
+<select id="notifyCooldown"><option value="10">10 minutes</option><option value="20" selected>20 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes</option></select></label>
+<button id="notificationBtn" data-i18n="allowNotifBtn">Autoriser les notifications</button><button id="savePrefsBtn" class="primary full" data-i18n="save">Enregistrer</button></div>
+
+<div class="card">
+<h2 data-i18n="apiUsageTitle">Utilisation de l'API</h2>
+<p class="muted tiny" data-i18n="apiUsageDesc">Yuki met en cache et mutualise les données pour limiter les appels réels au fournisseur. Les chiffres ci-dessous sont une estimation locale calculée par Yuki (nombre d'appels effectués depuis cet appareil) — Twelve Data ne renvoie pas toujours le quota restant en temps réel. Appuie sur « Vérifier le quota réel » pour interroger directement le fournisseur quand c'est possible.</p>
+<p class="tiny" id="apiUsageSourceLabel"><span class="provider-badge" id="apiUsageSourceBadge" data-i18n="apiUsageLocalBadge">Estimation locale</span></p>
+<div class="api-usage-grid">
+<div><span data-i18n="thisMinuteLabel">Cette minute</span><strong id="apiUsageMinute">—</strong></div>
+<div><span data-i18n="todayLabel">Aujourd'hui</span><strong id="apiUsageDay">—</strong></div>
+</div>
+<div class="prob-bar"><div id="apiUsageBar" class="prob-fill" style="width:0%"></div></div>
+<button id="checkRealApiUsageBtn" class="full" data-i18n="checkRealQuotaBtn">Vérifier le quota réel</button>
+<p class="muted tiny" id="apiUsageCheckStatus"></p>
+<label class="switch"><input id="economyModeToggle" type="checkbox"> <span data-i18n="economyModeLabel">Mode économie (cache plus long, analyse automatique plus espacée)</span></label>
+<label><span data-i18n="dailyQuotaLabel">Estimation du quota quotidien</span><input id="dailyApiCreditInput" type="number" min="50" step="50"></label>
+<label><span data-i18n="perMinuteQuotaLabel">Estimation du quota par minute</span><input id="perMinuteApiCreditInput" type="number" min="1" step="1"></label>
+<button id="saveApiUsagePrefsBtn" class="primary full" data-i18n="save">Enregistrer</button>
+</div>
+
+<div class="card">
+  <h2 data-i18n="installDiagTitle">Diagnostic d’installation</h2>
+  <div id="pwaDiagnostic" class="list">
+    <div class="item" data-i18n="diagRunning">Diagnostic en cours…</div>
+  </div>
+  <button id="runPwaDiagnosticBtn" class="primary full" data-i18n="rerunDiagBtn">Relancer le diagnostic</button>
+</div>
+
+<div class="card"><h2 data-i18n="versionTitle">Version / À propos</h2>
+<p class="muted">Yuki Trader Pro <strong id="appVersion">4.0</strong></p>
+<p class="muted tiny" data-i18n="versionDesc">Assistant d’aide à la décision. Les analyses sont probabilistes et ne constituent jamais une certitude ni un conseil en investissement personnalisé.</p>
+</div>
+
+<div class="card warning"><h2 data-i18n="importantTitle">Important</h2><p data-i18n="importantDesc">Yuki Trader Pro est un assistant d’aide à la décision. Il analyse les marchés à partir de données techniques et statistiques. L’application n’accède à aucune plateforme de trading, n’exécute aucun ordre et ne garantit aucun résultat. Toutes les décisions d’investissement restent sous la responsabilité de l’utilisateur.</p></div>
+
+</section>
+
+<section id="admin" class="panel" data-requires-admin>
+<div class="card"><h2 data-i18n="administration">Administration</h2>
+<p class="muted" data-i18n="adminDesc">Gestion des utilisateurs, des abonnements et statistiques d'usage. La liste des utilisateurs ci-dessous est stockée localement sur cet appareil pour la démonstration (mode local) — le mode serveur (voir Réglages) fournit une administration multi-appareils réelle.</p>
+<div id="adminStats" class="stats-grid"></div>
+<div class="item-head"><h2 data-i18n="usersTitle">Utilisateurs</h2><button id="adminRefreshBtn" data-i18n="refresh">Actualiser</button></div>
+<div id="adminUserList" class="list"></div>
+</div>
+<div class="card" id="adminOffersCard">
+<div class="item-head"><h2 data-i18n="offersTitle">Offres d'abonnement</h2><button id="adminOffersRefreshBtn" data-i18n="refresh">Actualiser</button></div>
+<p class="muted tiny" data-i18n="offersDesc">Piloté entièrement depuis le backend (mode serveur requis) — modifier un prix, activer/désactiver ou créer une offre ici prend effet immédiatement, sans republier l'application.</p>
+<div id="adminOffersList" class="list"></div>
+<h2 style="margin-top:14px" data-i18n="createOfferTitle">Créer une nouvelle offre</h2>
+<label><span data-i18n="offerNameLabel">Nom</span><input id="newOfferName" placeholder="Ex. Black Friday" data-i18n-ph="offerNamePh"></label>
+<label><span data-i18n="offerDescLabel">Description</span><input id="newOfferDescription" placeholder="Optionnel" data-i18n-ph="offerDescPh"></label>
+<label><span data-i18n="offerPriceLabel">Prix (€/mois)</span><input id="newOfferPrice" type="number" min="0" step="0.10"></label>
+<label><span data-i18n="offerSeatLabel">Places limitées (laisser vide = illimité)</span><input id="newOfferSeatLimit" type="number" min="1"></label>
+<button id="createOfferBtn" class="primary full" data-i18n="createOfferBtn">Créer l'offre</button>
+</div>
+</section>
+</main></div>
+
+<nav class="bottom-nav">
+<button class="nav-btn active" data-panel="home"><span>⌂</span><span data-i18n="navHome">Accueil</span></button>
+<button class="nav-btn" data-panel="markets"><span>🌐</span><span data-i18n="navMarkets">Marchés</span></button>
+<button class="nav-btn" data-panel="etf"><span>📈</span><span data-i18n="navEtf">ETF</span></button>
+<button class="nav-btn" data-panel="scanner"><span>★</span><span data-i18n="navScanner">Scanner</span></button><button class="nav-btn" data-panel="explorer"><span>⌕</span><span data-i18n="navExplorer">Monde</span></button>
+<button class="nav-btn" data-panel="sectors"><span>▦</span><span data-i18n="navSectors">Secteurs</span></button>
+<button class="nav-btn" data-panel="favorites"><span>♥</span><span data-i18n="navFavorites">Favoris</span></button>
+<button class="nav-btn" data-panel="positions"><span>↕</span><span data-i18n="navPositions">CFD</span></button>
+<button class="nav-btn" data-panel="journal"><span>📒</span><span data-i18n="navJournal">Journal</span></button>
+<button class="nav-btn" data-panel="csv"><span>⇪</span><span data-i18n="navCsv">Import CSV</span></button>
+<button class="nav-btn" data-panel="portfolio"><span>💼</span><span data-i18n="navPortfolio">Portef.</span></button>
+<button class="nav-btn" data-panel="scalping"><span>⚡</span><span data-i18n="navScalping">Scalp</span></button>
+<button class="nav-btn" data-panel="options"><span>◇</span><span data-i18n="navOptions">Options</span></button>
+<button class="nav-btn" data-panel="stats"><span>▥</span><span data-i18n="navStats">Stats</span></button>
+<button class="nav-btn" data-panel="settings"><span>⚙</span><span data-i18n="navSettings">Réglages</span></button>
+<button class="nav-btn" data-panel="admin" data-requires-admin><span>🛡</span><span data-i18n="navAdmin">Admin</span></button>
+</nav>
+
+<dialog id="onboardingFlow" class="onboarding-flow-dialog">
+  <div class="ob-progress"><div id="obProgressBar" class="ob-progress-bar"></div></div>
+  <p class="tiny muted ob-step-label" id="obStepLabel"></p>
+
+  <div class="ob-step" data-ob-step="1">
+    <div class="yuki-hero-wrapper"><img src="assets/images/yuki/yuki-avatar-250.png?v=20260719d" class="yuki-hero-image" alt="Yuki"></div>
+    <h2 data-i18n="ob1Title">Bonjour, je suis Yuki 👋</h2>
+    <p class="muted" data-i18n="ob1Body">Je serai ton assistant tout au long de ton utilisation de Yuki Trader Pro. Je t'aide à comprendre les marchés, mais je ne prends jamais les décisions à ta place.</p>
+    <button type="button" class="primary full ob-next" data-i18n="ob1Cta">Commencer</button>
+  </div>
+
+  <div class="ob-step" data-ob-step="2" hidden>
+    <h2 data-i18n="ob2Title">Choisis ton mode d'affichage</h2>
+    <p class="muted" data-i18n="ob2Body">Tu pourras changer d'avis à tout moment dans Réglages. Le moteur d'analyse et les signaux sont strictement identiques dans les deux modes.</p>
+    <button type="button" id="obModeSimpleBtn" class="ob-choice-card">
+      <strong data-i18n="ob2SimpleTitle">🟢 Mode Simple</strong>
+      <small data-i18n="ob2SimpleBody">Pour les débutants : interface épurée, peu d'informations, explications simples, peu d'indicateurs.</small>
+    </button>
+    <button type="button" id="obModeExpertBtn" class="ob-choice-card">
+      <strong data-i18n="ob2ExpertTitle">🔵 Mode Expert</strong>
+      <small data-i18n="ob2ExpertBody">Pour les traders expérimentés : toutes les analyses, tous les indicateurs, toutes les statistiques, interface complète.</small>
+    </button>
+  </div>
+
+  <div class="ob-step" data-ob-step="3" hidden>
+    <h2 data-i18n="ob3Title">Quel est ton profil de trading ?</h2>
+    <p class="muted" data-i18n="ob3Body">Ce choix nous aide à personnaliser l'application. Tu pourras le modifier à tout moment dans Réglages.</p>
+    <button type="button" class="ob-choice-card ob-profile-btn" data-profile="scalping">
+      <strong data-i18n="obProfileScalping">Scalping</strong>
+      <small data-i18n="obProfileScalpingDesc">Positions très courtes, quelques minutes.</small>
+    </button>
+    <button type="button" class="ob-choice-card ob-profile-btn" data-profile="day_trading">
+      <strong data-i18n="obProfileDayTrading">Day Trading</strong>
+      <small data-i18n="obProfileDayTradingDesc">Positions ouvertes et fermées dans la journée.</small>
+    </button>
+    <button type="button" class="ob-choice-card ob-profile-btn" data-profile="swing">
+      <strong data-i18n="obProfileSwing">Swing Trading</strong>
+      <small data-i18n="obProfileSwingDesc">Positions tenues plusieurs jours à plusieurs semaines.</small>
+    </button>
+    <button type="button" class="ob-choice-card ob-profile-btn" data-profile="investment">
+      <strong data-i18n="obProfileInvestment">Investissement</strong>
+      <small data-i18n="obProfileInvestmentDesc">Vision long terme, plusieurs mois ou années.</small>
+    </button>
+  </div>
+
+  <div class="ob-step" data-ob-step="4" hidden>
+    <h2 data-i18n="ob4Title">Ta confidentialité</h2>
+    <p class="muted" data-i18n="ob4Body">Tes données restent privées. Yuki Trader Pro ne revend aucune donnée. Certaines données anonymes, si tu les autorises, peuvent nous aider à améliorer l'application.</p>
+    <label class="ob-toggle-row">
+      <span><strong data-i18n="ob4Notifications">Notifications</strong><br><small class="muted" data-i18n="ob4NotificationsDesc">Être alerté des signaux qui correspondent à tes critères.</small></span>
+      <input type="checkbox" id="obNotifToggle" class="switch-input">
+    </label>
+    <label class="ob-toggle-row">
+      <span><strong data-i18n="ob4CrashReports">Rapports de crash anonymes</strong><br><small class="muted" data-i18n="ob4CrashReportsDesc">Nous aider à corriger les bugs, sans aucune donnée personnelle.</small></span>
+      <input type="checkbox" id="obCrashToggle" class="switch-input">
+    </label>
+    <label class="ob-toggle-row">
+      <span><strong data-i18n="ob4AnonymousStats">Statistiques anonymes</strong><br><small class="muted" data-i18n="ob4AnonymousStatsDesc">Nous aider à améliorer l'application avec des statistiques d'usage anonymes.</small></span>
+      <input type="checkbox" id="obStatsToggle" class="switch-input">
+    </label>
+    <p class="tiny muted" data-i18n="ob4Footnote">Tous ces choix restent modifiables à tout moment dans Réglages.</p>
+    <button type="button" class="primary full ob-next" data-i18n="obNext">Continuer</button>
+  </div>
+
+  <div class="ob-step" data-ob-step="5" hidden>
+    <h2 data-i18n="ob5Title">Dernière étape</h2>
+    <label class="ob-checkbox-row"><input type="checkbox" id="obTermsCheckbox"><span data-i18n="ob5Terms">J'accepte les Conditions Générales d'Utilisation</span></label>
+    <label class="ob-checkbox-row"><input type="checkbox" id="obPrivacyCheckbox"><span data-i18n="ob5Privacy">J'accepte la Politique de confidentialité</span></label>
+    <p class="tiny muted" data-i18n="ob5Disclaimer">Yuki Trader Pro est un outil d'aide à la décision. Il ne fournit jamais de conseil financier personnalisé.</p>
+    <p class="tiny ob-error" id="obTermsError" data-i18n="ob5Required" style="display:none">Les deux cases doivent être cochées pour continuer.</p>
+    <button type="button" id="obAcceptBtn" class="primary full" data-i18n="ob5Cta">J'accepte et je continue</button>
+  </div>
+
+  <div class="ob-step" data-ob-step="6" hidden>
+    <div class="yuki-hero-wrapper"><img src="assets/images/yuki/yuki-avatar-250.png?v=20260719d" class="yuki-hero-image ob-final-anim" alt="Yuki"></div>
+    <h2 data-i18n="ob6Title">Ton espace est prêt.</h2>
+    <p class="muted" data-i18n="ob6Body">Bonne analyse des marchés !</p>
+    <button type="button" id="obFinishBtn" class="primary full" data-i18n="ob6Cta">Accéder au tableau de bord</button>
+  </div>
+</dialog>
+
+<dialog id="uiModeDialog">
+  <div class="install-dialog">
+    <h2 data-i18n="uiModeDialogTitle">Choisis ton mode d'affichage</h2>
+    <p class="muted" data-i18n="uiModeDialogDesc">Tu pourras changer d'avis à tout moment dans Réglages → Mode d'affichage. Le moteur d'analyse et les signaux sont strictement identiques dans les deux modes.</p>
+    <div class="ui-mode-choice">
+      <button id="uiModeDialogSimpleBtn" class="primary full"><span data-i18n="uiModeDialogSimpleLabel">🟢 Mode Simple</span><br><small class="tiny" data-i18n="uiModeDialogSimpleDesc">L'essentiel : signal, score, confiance, risque, résumé et suggestion IA.</small></button>
+      <button id="uiModeDialogExpertBtn" class="full"><span data-i18n="uiModeDialogExpertLabel">🔵 Mode Expert</span><br><small class="tiny" data-i18n="uiModeDialogExpertDesc">Toutes les données : RSI, MACD, EMA, ATR, ADX, Bollinger, scénarios, journal…</small></button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="installHelp">
+  <div class="install-dialog">
+    <h2 data-i18n="installHelpTitle">Installer Yuki</h2>
+    <p id="installHelpText"></p>
+    <div id="installSteps" class="install-steps"></div>
+    <button id="copySiteLinkBtn" class="primary full" data-i18n="copyLinkBtn">Copier le lien public</button>
+    <button id="closeInstallHelpBtn" class="full" data-i18n="closeBtn">Fermer</button>
+  </div>
+</dialog>
+
+<script src="auth.js"></script>
+<script src="sync-client.js"></script>
+<script src="push-client.js"></script>
+<script src="api-cache.js"></script>
+<script src="analysis.js"></script>
+<script src="app.js"></script>
+<script src="js/yuki-messages.js"></script>
+<script src="js/yuki-knowledge.js"></script>
+<script src="js/yuki-assistant.js"></script>
+<script src="csv-import-client.js"></script>
+</body></html>

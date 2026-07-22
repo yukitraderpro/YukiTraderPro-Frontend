@@ -1,0 +1,50 @@
+# ==============================================================================
+# En-têtes de sécurité Netlify — Yuki Trader Pro V4 (version commerciale)
+# Cahier des charges V4.0, Partie 7.
+# --------------------------------------------------------------------------
+# Netlify sert ce fichier tel quel : à placer à la racine du dossier publié
+# (le même dossier que index.html, donc dans dist/production/ une fois le
+# build de production généré — voir build/scripts/build.js).
+#
+# IMPORTANT :
+#   - Architecture confirmée : window.YUKI_API_BASE = "/api" (same-origin
+#     sur yukitraderpro.com, proxifié vers le backend via netlify.toml) —
+#     c'est pourquoi connect-src ci-dessous n'a besoin que de 'self' pour
+#     l'API applicative (comptes, abonnements, sync, CSV...).
+#   - `payment=(self)` est nécessaire (pas `payment=()`) : le flux
+#     d'abonnement utilise la Payment Request API standard (Digital Goods
+#     API / Google Play Billing dans la TWA, voir twa/BillingBridge.md) —
+#     la bloquer casserait le bouton "S'abonner" sur Android.
+#   - N'ajoutez https://www.gstatic.com / googleapis.com que si les
+#     notifications push (Firebase Cloud Messaging) sont réellement activées
+#     (window.YUKI_FIREBASE_CONFIG renseigné) — sinon vous pouvez les retirer.
+# ==============================================================================
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.gstatic.com; font-src 'self'; connect-src 'self' https://api.twelvedata.com https://firebaseinstallations.googleapis.com https://fcmregistrations.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(self), usb=(), magnetometer=(), gyroscope=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+# L'application est une PWA (Service Worker + manifest) : jamais mise en
+# cache HTTP côté navigateur/CDN pour index.html (le Service Worker gère
+# déjà sa propre stratégie de cache applicatif, voir service-worker.js et
+# Partie 5 du cahier des charges — ne pas dupliquer/contredire cette
+# logique avec un cache HTTP agressif sur le document HTML).
+/index.html
+  Cache-Control: no-cache
+
+/service-worker.js
+  Cache-Control: no-cache
+
+# Les assets statiques versionnés (JS/CSS/images) peuvent être mis en cache
+# longuement par le CDN : ce ne sont jamais des données API/compte/token
+# (voir Partie 5), et toute mise à jour de contenu change le nom du fichier
+# précaché par le Service Worker (cache-busting déjà en place, voir
+# service-worker.js).
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

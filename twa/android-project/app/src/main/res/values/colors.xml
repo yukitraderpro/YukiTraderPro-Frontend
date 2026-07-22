@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Reprend exactement le thème existant de l'app web (theme_color du
+         manifest.json / meta theme-color d'index.html), pour une transition
+         visuelle sans à-coup entre le splash screen natif et la PWA. -->
+    <color name="colorPrimary">#0f172a</color>
+    <color name="colorPrimaryDark">#0f172a</color>
+</resources>

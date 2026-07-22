@@ -1,0 +1,11 @@
+{
+  "name": "yuki-trader-pro",
+  "version": "4.0.0",
+  "private": true,
+  "description": "Yuki Trader Pro — PWA de copilote de trading (voir README.md)",
+  "scripts": {
+    "test": "node test/run-all.js",
+    "build:dev": "echo 'Build Développement = sources non transformées (ce dépôt tel quel : index.html, *.js, *.css non minifiés, avec tests/ et documentation). Servir directement à la racine pour développer.'",
+    "build:prod": "node build/scripts/build.js"
+  }
+}
