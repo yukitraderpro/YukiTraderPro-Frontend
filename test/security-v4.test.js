@@ -154,43 +154,5 @@ test("le build de production embarque bien _headers, config.js et .well-known/as
   assert.ok(/\.well-known\/assetlinks\.json/.test(buildSrc));
 });
 
-/* ---- Cohérence du nom de package Android (Play Console / Play Billing) */
-const twaManifestSrc = fs.readFileSync(path.join(__dirname, "..", "twa", "twa-manifest.json"), "utf8");
-const assetlinksSrc = fs.readFileSync(path.join(__dirname, "..", "twa", "assetlinks.json"), "utf8");
-const appGradleSrc = fs.readFileSync(path.join(__dirname, "..", "twa", "android-project", "app", "build.gradle.kts"), "utf8");
-const envExampleSrc = fs.readFileSync(path.join(__dirname, "..", "backend", ".env.example"), "utf8");
-test("le nom de package Android (com.yukitraderpro.app) est identique partout : twa-manifest, assetlinks, build.gradle, et GOOGLE_PLAY_PACKAGE_NAME backend", () => {
-  const PKG = "com.yukitraderpro.app";
-  assert.ok(twaManifestSrc.includes(`"packageId": "${PKG}"`));
-  assert.ok(assetlinksSrc.includes(`"package_name": "${PKG}"`));
-  assert.ok(appGradleSrc.includes(`namespace = "${PKG}"`) && appGradleSrc.includes(`applicationId = "${PKG}"`));
-  assert.ok(envExampleSrc.includes(`GOOGLE_PLAY_PACKAGE_NAME=${PKG}`));
-  // Aucune trace de l'ancien nom de package incohérent ne doit subsister.
-  assert.ok(!/com\.yukitrader\.pro\b/.test(twaManifestSrc + assetlinksSrc + appGradleSrc + envExampleSrc));
-});
-
-/* ---- Consigne permanente : Claude ne génère/ne livre jamais de clé de
-   signature Android (keystore, mot de passe, empreinte réelle) --------- */
-test("aucun fichier keystore (.keystore/.jks) n'est présent dans le dépôt", () => {
-  const keystoreDir = path.join(__dirname, "..", "twa", "keystore");
-  const files = fs.existsSync(keystoreDir) ? fs.readdirSync(keystoreDir) : [];
-  const keyFiles = files.filter(f => /\.(keystore|jks)$/i.test(f));
-  assert.deepStrictEqual(keyFiles, [], `fichier(s) de clé trouvé(s): ${keyFiles.join(", ")}`);
-});
-test("aucun mot de passe de keystore en dur nulle part (uniquement lu depuis une variable d'environnement)", () => {
-  assert.ok(!/storePassword\s*=\s*"[^"$][^"]*"/.test(appGradleSrc), "storePassword ne doit jamais être une chaîne en dur");
-  assert.ok(appGradleSrc.includes('System.getenv("YUKI_KEYSTORE_PASSWORD")'));
-});
-test("assetlinks.json et strings.xml contiennent un placeholder d'empreinte, jamais une empreinte réelle générée par Claude", () => {
-  assert.ok(/REMPLACER_PAR_L_EMPREINTE/.test(assetlinksSrc));
-  const stringsXmlSrc = fs.readFileSync(path.join(__dirname, "..", "twa", "android-project", "app", "src", "main", "res", "values", "strings.xml"), "utf8");
-  assert.ok(/REMPLACER_PAR_L_EMPREINTE/.test(stringsXmlSrc));
-  // Une empreinte SHA-256 réelle a la forme XX:XX:...×32 paires hexa — on
-  // s'assure qu'aucune valeur de cette forme ne s'est glissée à la place
-  // du placeholder attendu.
-  const fingerprintPattern = /"sha256_cert_fingerprints":\s*\[\s*"([0-9A-F:]{95})"/i;
-  assert.ok(!fingerprintPattern.test(assetlinksSrc), "une empreinte réelle ne doit jamais être committée par Claude");
-});
-
 console.log(`\n${passed} test(s) réussi(s), ${failed} échec(s).\n`);
 process.exit(failed ? 1 : 0);

@@ -231,7 +231,11 @@ test("suggestedQuestionsForScreen renvoie des questions dans la langue demandée
    ========================================================================== */
 
 test("Hash SHA-256 de analysis.js inchangé par l'intégration du module Yuki", () => {
-  const EXPECTED_HASH = "e534b99adbb82b9b3995f34070fe88c0516d770a8b4da83616129c5abdc69c74";
+  /* Hash mis à jour le 23/07/2026 — modification du moteur VALIDÉE
+     explicitement par le propriétaire (demande V4.1 : régime de marché,
+     divergences RSI, intervalle de Wilson, backtest walk-forward). Voir
+     RAPPORT_CHANGEMENTS_V4_1_MOTEUR.md. */
+  const EXPECTED_HASH = "694aa4f712907786d1cc58c16248732f3ecadfffd360b49e7e819eda94d21e7c";
   const actual = crypto.createHash("sha256").update(fs.readFileSync(path.join(ROOT, "analysis.js"))).digest("hex");
   assert.strictEqual(actual, EXPECTED_HASH, "analysis.js a été modifié — le moteur d'analyse doit rester strictement intact");
 });
