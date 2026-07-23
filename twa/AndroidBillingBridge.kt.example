@@ -42,7 +42,7 @@
       BillingBridge.md).
    ========================================================================== */
 
-package com.yukitraderpro.app.billing
+package com.yukitrader.pro.billing
 
 import android.app.Activity
 import android.webkit.JavascriptInterface

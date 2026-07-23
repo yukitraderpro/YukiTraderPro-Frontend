@@ -105,8 +105,12 @@ function analyseSeries(values,weights){
  const closes=values.map(x=>x.close),price=closes.at(-1),e20=ema(closes.slice(-80),20),e50=ema(closes.slice(-120),50),e100=closes.length>=110?ema(closes.slice(-140),100):null,r=rsi(closes),a=atr(values),mom5=(price/closes.at(-6)-1)*100,mom20=(price/closes.at(-21)-1)*100;
  const returns=[];for(let i=Math.max(1,closes.length-30);i<closes.length;i++)returns.push((closes[i]/closes[i-1]-1)*100);
  const vol=stdev(returns)*Math.sqrt(24),trend=(e20/e50-1)*100;
+ /* V4.1 : régime de marché (analysis.js) — module les votes de base ET la
+    confluence, de façon bornée (voir detectMarketRegime/regimeMultiplier). */
+ const mr=detectMarketRegime(values);
+ const rm=name=>regimeMultiplier(mr&&mr.regime,name);
  let score=0,reasons=[],baseVotes=[];
- const baseVote=(v,label,name)=>{score+=v*wt(name);reasons.push(label);baseVotes.push({name,dir:v>0?1:v<0?-1:0,magnitude:Math.abs(v),weight:wt(name),label})};
+ const baseVote=(v,label,name)=>{score+=v*wt(name)*rm(name);reasons.push(label);baseVotes.push({name,dir:v>0?1:v<0?-1:0,magnitude:Math.abs(v),weight:wt(name),label})};
  if(e20>e50)baseVote(1.2,"Tendance court terme haussière (EMA20 > EMA50)","trend_court");else baseVote(-1.2,"Tendance court terme baissière (EMA20 < EMA50)","trend_court");
  if(e100!==null){if(e50>e100)baseVote(0.7,"Tendance long terme haussière (EMA50 > EMA100)","trend_long");else baseVote(-0.7,"Tendance long terme baissière (EMA50 < EMA100)","trend_long")}
  if(r!==null&&r>52&&r<70)baseVote(1,`RSI favorable ${r.toFixed(1)}`,"rsi");
@@ -121,7 +125,7 @@ function analyseSeries(values,weights){
     Ichimoku, supports/résistances, volume, SMC — pondérée dynamiquement par
     `weights` (voir « Pondération dynamique » dans analysis.js), et détection
     des faux signaux. */
- const conf=buildConfluence(values,score,reasons,baseVotes,weights);
+ const conf=buildConfluence(values,score,reasons,baseVotes,weights,mr);
  score=conf.score;reasons=conf.reasons;
  if(conf.falseSignalRisk)reasons.push("Trop de signaux contradictoires — prudence renforcée");
  const signalScoreThreshold=conf.falseSignalRisk?3.4:2.4;
@@ -133,7 +137,7 @@ function analyseSeries(values,weights){
  const scenarios=computeScenarios(conf.votes,conf.sr,price,conf.falseSignalRisk);
  const insufficientData=isDataInsufficient(values,conf.dataCompleteness);
  if(insufficientData){signal="ATTENDRE";reasons.push("Confiance insuffisante — données ou indicateurs disponibles trop incomplets pour trancher")}
- return{signal,confidence,price,atr:a,reasons,stop,target,rr,quality:quality(confidence,rr,conf.strongTrend),regime:regime(vol,trend),score,vol,trend,strongTrend:conf.strongTrend,risk:riskLevel(vol,rr,conf.falseSignalRisk),votes:conf.votes,scenarios,insufficientData,dataCompleteness:conf.dataCompleteness}
+ return{signal,confidence,price,atr:a,reasons,stop,target,rr,quality:quality(confidence,rr,conf.strongTrend),regime:regime(vol,trend),marketRegime:mr,score,vol,trend,strongTrend:conf.strongTrend,risk:riskLevel(vol,rr,conf.falseSignalRisk),votes:conf.votes,scenarios,insufficientData,dataCompleteness:conf.dataCompleteness}
 }
 async function fetchSeries(item,interval=currentHorizon){
  if(!state.apiKey)throw new Error(t("apiKeyMissingOpenSettings"));
@@ -736,12 +740,12 @@ function renderIndicatorWeights(){
  });
  box.innerHTML=rows.join("")||`<div class="item muted">${t("noDataYet")}</div>`;
 }
-async function scanSectors(){const sectors=[...new Set(CATALOG.filter(x=>x.type!=="CFD").map(x=>x.sector))].slice(0,12),cards=[];$("sectorMap").innerHTML=`<div class="item">${t("analyzingSectorsPlaceholder")}</div>`;for(const sec of sectors){const item=CATALOG.find(x=>x.sector===sec&&x.type!=="CFD");try{const r=await analyseItem(item,false,false);cards.push({sec,r})}catch{cards.push({sec,error:true})}}$("sectorMap").innerHTML=cards.map(x=>x.error?`<div class="sector-card"><strong>${x.sec}</strong><small>${t("unavailableShort")}</small></div>`:`<div class="sector-card"><strong>${x.sec}</strong><small class="${x.r.signal==="ACHETER"?"buy":x.r.signal==="VENDRE"?"sell":"hold"}">${trSignal(x.r.signal)} · ${x.r.confidence}%</small></div>`).join("")}
+async function scanSectors(){const sectors=[...new Set(CATALOG.filter(x=>x.type!=="CFD").map(x=>x.sector))].slice(0,12);$("sectorMap").innerHTML=`<div class="item">${t("analyzingSectorsPlaceholder")}</div>`;const cards=await Promise.all(sectors.map(async sec=>{const item=CATALOG.find(x=>x.sector===sec&&x.type!=="CFD");try{const r=await analyseItem(item,false,false);return{sec,r}}catch{return{sec,error:true}}}));$("sectorMap").innerHTML=cards.map(x=>x.error?`<div class="sector-card"><strong>${x.sec}</strong><small>${t("unavailableShort")}</small></div>`:`<div class="sector-card"><strong>${x.sec}</strong><small class="${x.r.signal==="ACHETER"?"buy":x.r.signal==="VENDRE"?"sell":"hold"}">${trSignal(x.r.signal)} · ${x.r.confidence}%</small></div>`).join("")}
 function updateFavoriteButton(){const btn=$("favoriteBtn");if(!btn)return;const isFav=(state.favorites||[]).includes(state.selected);btn.textContent=isFav?t("favoriteBtnActive"):t("favoriteBtn");btn.classList.toggle("active",isFav)}
 function toggleFavorite(){const id=state.selected,list=state.favorites||(state.favorites=[]),idx=list.indexOf(id);if(idx>=0)list.splice(idx,1);else list.push(id);save();updateFavoriteButton();renderFavorites()}
 function renderFavorites(){const box=$("favoritesList");if(!box)return;const list=state.favorites||[];if(!list.length){box.innerHTML=`<div class="item muted">${t("noFavorites")}</div>`;return}box.innerHTML=list.map(id=>{const item=allCatalog().find(x=>x.id===id);if(!item)return"";return `<div class="item"><strong>${item.name}</strong><small>${item.xtb||""} · ${item.type}</small></div>`}).join("")}
 function renderSearch(query){const box=$("searchResults");if(!box)return;query=(query||"").trim().toLowerCase();if(!query){box.innerHTML="";return}const results=allCatalog().filter(x=>x.name.toLowerCase().includes(query)||(x.isin||"").toLowerCase().includes(query)||(x.xtb||"").toLowerCase().includes(query)||x.symbol.toLowerCase().includes(query)).slice(0,15);box.innerHTML=results.map(x=>`<div class="item" data-id="${x.id}"><strong>${x.name}</strong><small>${x.xtb||""} · ${x.type}</small></div>`).join("");box.querySelectorAll(".item").forEach(el=>el.onclick=()=>{state.selected=el.dataset.id;save();$("instrumentSelect").value=state.selected;updateFavoriteButton();box.innerHTML="";$("globalSearch").value=""})}
-function scanList(list,targetId,progressId){const box=$(targetId),progress=$(progressId);if(!box)return;box.innerHTML="";if(progress)progress.textContent=t("analyzingInProgress");(async()=>{const results=[];for(const item of list){try{results.push(await analyseItem(item,false,false))}catch{}}results.sort((a,b)=>b.confidence-a.confidence);box.innerHTML=results.length?results.map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}% · ${r.quality}</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join(""):`<div class="item muted">${t("noResults")}</div>`;if(progress)progress.textContent=t("doneAnalyzedSuffix")(results.length)})()}
+function scanList(list,targetId,progressId){const box=$(targetId),progress=$(progressId);if(!box)return;box.innerHTML="";if(progress)progress.textContent=t("analyzingInProgress");(async()=>{const settled=await Promise.allSettled(list.map(item=>analyseItem(item,false,false)));const results=settled.filter(x=>x.status==="fulfilled").map(x=>x.value);results.sort((a,b)=>b.confidence-a.confidence);box.innerHTML=results.length?results.map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}% · ${r.quality}</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join(""):`<div class="item muted">${t("noResults")}</div>`;if(progress)progress.textContent=t("doneAnalyzedSuffix")(results.length)})()}
 function populate(){$("instrumentSelect").innerHTML=allCatalog().map(x=>`<option value="${x.id}">${x.name} · ${x.type}</option>`).join("");$("instrumentSelect").value=state.selected;$("positionInstrument").innerHTML=CATALOG.filter(x=>x.type==="CFD").map(x=>`<option value="${x.id}">${x.name} · ${x.xtb}</option>`).join("");const scalpItems=SCALP_IDS.map(id=>allCatalog().find(x=>x.id===id)).filter(Boolean);$("scalpingInstrument").innerHTML=scalpItems.map(x=>`<option value="${x.id}">${x.xtb||x.symbol} · ${x.name}</option>`).join("");const sectors=[...new Set(CATALOG.map(x=>x.sector))].sort();$("sectorFilter").innerHTML='<option value="">Tous</option>'+sectors.map(x=>`<option>${x}</option>`).join("");$("autoScanToggle").checked=state.prefs.auto;$("autoInterval").value=String(state.prefs.interval);$("notifyThreshold").value=state.prefs.notifyThreshold;if($("notifyCooldown"))$("notifyCooldown").value=String(state.prefs.notifyCooldownMinutes||20);if($("minQualityGrade"))$("minQualityGrade").value=state.prefs.minQualityGrade||"C";if($("economyModeToggle"))$("economyModeToggle").checked=!!state.prefs.economyMode;if($("dailyApiCreditInput"))$("dailyApiCreditInput").value=state.prefs.dailyApiCreditEstimate||800;if($("perMinuteApiCreditInput"))$("perMinuteApiCreditInput").value=state.prefs.perMinuteApiCreditEstimate||8;renderApiUsage();renderFavorites();renderStats();renderKeyUi();updateFavoriteButton()}
 function openPanel(name){
  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
@@ -971,8 +975,8 @@ async function refreshHomeOpportunities(){
   renderHomeAlerts();
   const pool=opportunityPool();
   if(!state.apiKey){ box.innerHTML=`<div class="item muted">${t("addApiKeyForOpportunities")}</div>`; if(marketBox)marketBox.innerHTML='<small class="muted">—</small>'; if(scoreBox)scoreBox.innerHTML='<small class="muted">—</small>'; return; }
-  const results=[];
-  for(const item of pool){ try{ results.push(await analyseItem(item,false,false)); }catch{} }
+  const settled=await Promise.allSettled(pool.map(item=>analyseItem(item,false,false)));
+  const results=settled.filter(x=>x.status==="fulfilled").map(x=>x.value);
   results.sort((a,b)=>b.confidence-a.confidence);
   if(!results.length){ box.innerHTML=`<div class="item muted">${t("noDataAvailableNow")}</div>`; if(marketBox)marketBox.innerHTML='<small class="muted">—</small>'; if(scoreBox)scoreBox.innerHTML='<small class="muted">—</small>'; return; }
   const best=results[0];

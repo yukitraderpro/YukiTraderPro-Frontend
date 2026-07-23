@@ -1,5 +1,5 @@
 {
-  "packageId": "com.yukitraderpro.app",
+  "packageId": "com.yukitrader.pro",
   "host": "yukitraderpro.com",
   "name": "Yuki Trader Pro",
   "launcherName": "Yuki Trader",
@@ -13,8 +13,7 @@
   "shortcuts": [],
   "signingKey": {
     "path": "./keystore/android-release.keystore",
-    "alias": "yuki-trader-pro",
-    "_comment": "Fichier non fourni par Claude — à générer en local par le propriétaire, voir twa/keystore/README.md"
+    "alias": "yuki-trader-pro"
   },
   "appVersionName": "4.0.0",
   "appVersionCode": 1,

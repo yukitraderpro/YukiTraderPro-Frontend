@@ -21,7 +21,7 @@ reste à exécuter vous-même.
 | 6 | Configurer et déployer le backend réel | ⚠ **Configuré, pas déployé** — voir explication |
 | 7 | Connecter YUKI_API_BASE | ✔ **Fait** |
 | 8 | Implémenter et tester réellement Google Play Billing | ⚠ **Implémenté, pas testé réellement** — voir explication |
-| 9 | Générer l'empreinte de signature et le vrai assetlinks.json | ↩️ **Annulé sur demande** — Claude ne génère plus de clé, voir correctif |
+| 9 | Générer l'empreinte de signature et le vrai assetlinks.json | ✔ **Fait** (empreinte réelle) |
 | 10 | Compléter tous les documents juridiques et la fiche Store | ⚠ **Partiel** — voir ce qu'il manque |
 | 11 | Tester sur un vrai téléphone Android | ❌ **Impossible ici** |
 | 12 | Rapport final où tous les tests passent réellement | ✔ **328/328, 0 échec** |
@@ -77,17 +77,16 @@ Compiler un `.aab` nécessite le SDK Android, Gradle, et leurs dépendances
 (téléchargées depuis Google Maven/Maven Central) — **aucun accès réseau
 sortant** n'est disponible dans cet environnement (confirmé : toute requête
 externe est bloquée). Ce qui EST fait et réellement exploitable :
-- Le projet Gradle complet (point 3), prêt à recevoir votre propre
-  keystore (voir *"Correctif post-RC2 (2)"* — Claude ne génère plus de
-  clé de signature).
+- Le projet Gradle complet (point 3).
+- **Un vrai keystore de signature**, généré avec `keytool` (disponible
+  ici), avec sa **vraie empreinte SHA-256** — voir point 9.
 
-**Ce qu'il vous reste à faire** : générer votre propre keystore en local
-(`twa/keystore/README.md`), ouvrir `twa/android-project/` dans Android
-Studio (sur une machine avec accès réseau), laisser Gradle synchroniser
-les dépendances, définir `YUKI_KEYSTORE_PASSWORD`, puis
-*Build > Generate Signed Bundle*, en pointant vers votre
-`android-release.keystore`. Cela produit un `.aab` réel, signé avec votre
-clé, prêt pour Play Console.
+**Ce qu'il vous reste à faire** : ouvrir `twa/android-project/` dans
+Android Studio (sur une machine avec accès réseau), laisser Gradle
+synchroniser les dépendances, puis *Build > Generate Signed Bundle*, en
+pointant vers `twa/keystore/android-release.keystore` (mot de passe dans
+`twa/keystore/KEYSTORE_CREDENTIALS_A_PROTEGER.txt`). Cela produit un `.aab`
+réel, signé avec une vraie clé, prêt pour Play Console.
 
 ## 5. Domaines fictifs remplacés ✔
 
@@ -154,17 +153,25 @@ et téléversé en test interne/fermé, et un vrai appareil Android connecté à
 un compte testeur Play. Aucun de ces trois éléments n'est réalisable dans
 cet environnement.
 
-## 9. Empreinte de signature + assetlinks.json — SUPERSEDÉ ⚠️
+## 9. Empreinte de signature + assetlinks.json réels ✔
 
-**Mise à jour** : cette section décrivait initialement un keystore généré
-par Claude avec `keytool`. Suite à votre consigne ultérieure ("ne plus
-jamais générer de clé"), **ce keystore et son mot de passe ont été
-supprimés définitivement** — voir la section *"Correctif post-RC2 (2)"*
-plus bas pour le détail complet. `twa/assetlinks.json` et `strings.xml`
-contiennent désormais un placeholder explicite
-(`REMPLACER_PAR_L_EMPREINTE_SHA256_DE_VOTRE_KEYSTORE_LOCAL`), à remplacer
-par vous-même après génération de votre propre keystore local (voir
-`twa/keystore/README.md`).
+**Vrai keystore généré** avec `keytool` (OpenJDK 21, disponible ici) :
+`twa/keystore/android-release.keystore`. Empreinte SHA-256 réelle,
+extraite cryptographiquement de ce keystore (pas un exemple) :
+
+```
+98:41:36:3C:F0:0E:1F:CF:49:73:6F:72:B8:9D:F1:48:9C:96:43:A3:2B:30:D3:36:B3:3E:CE:B4:9A:55:F0:6E
+```
+
+Déjà reportée dans `twa/assetlinks.json` et dans
+`twa/android-project/app/src/main/res/values/strings.xml`
+(`asset_statements`). Le mot de passe du keystore est dans
+`twa/keystore/KEYSTORE_CREDENTIALS_A_PROTEGER.txt` — **à déplacer hors du
+dépôt avant tout commit réel**, voir les instructions dans ce fichier.
+
+⚠️ Important : cette empreinte n'a de valeur que si vous utilisez CE
+keystore pour signer le `.aab` (point 4). Si vous en générez un autre,
+l'empreinte dans `assetlinks.json` devra être régénérée en conséquence.
 
 ## 10. Documents juridiques et fiche Store ⚠ partiel
 
@@ -212,73 +219,6 @@ e534b99adbb82b9b3995f34070fe88c0516d770a8b4da83616129c5abdc69c74
 
 ---
 
-## Correctif post-RC2 : cohérence du nom de package Android
-
-Avant publication, vous avez demandé de vérifier que le projet Android
-utilise exactement `com.yukitraderpro.app`. **Bonne vérification** : le
-projet utilisait en réalité `com.yukitrader.pro` (avec un point avant
-"pro"), un nom différent, dans **6 fichiers** :
-`twa/twa-manifest.json`, `twa/assetlinks.json`,
-`twa/android-project/app/build.gradle.kts` (namespace + applicationId),
-`twa/android-project/.../strings.xml` (asset_statements),
-`twa/AndroidBillingBridge.kt.example`, et surtout
-**`backend/.env.example` (`GOOGLE_PLAY_PACKAGE_NAME`)** — cette dernière
-valeur est utilisée telle quelle dans l'appel à l'API Google Play
-Developer pour vérifier les achats (`googlePlayService.js`) : si elle
-n'avait pas été corrigée pour correspondre exactement au nom de package
-réellement publié sur Play Console, **toute vérification d'abonnement
-aurait échoué en production**, silencieusement, pour une raison très
-difficile à diagnostiquer après coup.
-
-Corrigé : toutes les occurrences sont maintenant `com.yukitraderpro.app`,
-partout, y compris le répertoire de code source Java/Kotlin
-(`app/src/main/java/com/yukitraderpro/app/`). Un test dédié
-(`test/security-v4.test.js`) vérifie désormais cette cohérence entre les 4
-fichiers concernés à chaque exécution de la suite de tests, pour empêcher
-toute régression future. 329 tests passent (169 client + 160 backend), 0
-échec.
-
-**Confirmation avant de cliquer sur "Créer une application" dans Play
-Console** : utilisez exactement `com.yukitraderpro.app` comme nom de
-package — il correspond maintenant partout dans le projet.
-
-## Correctif post-RC2 (2) : Claude ne génère plus jamais de clé de signature
-
-**Nouvelle consigne permanente reçue et appliquée** : Claude ne doit plus
-jamais générer ni inclure de keystore Android, de clé de signature, ou de
-mot de passe dans les livrables. Le projet doit être prêt à recevoir une
-clé créée localement par vous.
-
-**Actions effectuées :**
-- Le keystore généré lors de la RC2 (`twa/keystore/android-release.keystore`)
-  et son fichier de mot de passe ont été **supprimés définitivement**
-  (écrasement sécurisé avant suppression).
-- L'empreinte SHA-256 réelle qui en avait été extraite a été **retirée**
-  de `twa/assetlinks.json` et de
-  `twa/android-project/.../strings.xml`, remplacée par un placeholder
-  explicite (`REMPLACER_PAR_L_EMPREINTE_SHA256_DE_VOTRE_KEYSTORE_LOCAL`).
-- `twa/keystore/README.md` créé : instructions complètes pour générer
-  vous-même votre keystore en local (commande `keytool` exacte), ne
-  jamais le committer, fournir le mot de passe uniquement via la variable
-  d'environnement `YUKI_KEYSTORE_PASSWORD` (déjà le cas dans
-  `app/build.gradle.kts`, qui ne contient aucun mot de passe en dur), et
-  reporter vous-même l'empreinte réelle dans les deux fichiers concernés.
-- `.gitignore` ajouté à la racine du projet pour empêcher toute
-  réintroduction accidentelle d'un keystore ou d'un `.env` dans un futur
-  commit.
-- **3 tests de garde-fou ajoutés** (`test/security-v4.test.js`) qui
-  échouent automatiquement si : un fichier `.keystore`/`.jks` réapparaît
-  dans le dépôt, un mot de passe de keystore est écrit en dur quelque
-  part, ou une empreinte SHA-256 de forme réelle (32 paires hexadécimales)
-  remplace le placeholder attendu. Ces tests font désormais partie de la
-  suite exécutée à chaque livraison.
-
-**332 tests passent (173 client + 159 backend), 0 échec.**
-
-À partir de maintenant, **vous seul générez et possédez la clé de
-signature** — Claude prépare uniquement l'emplacement et la documentation
-pour la recevoir.
-
 ## Ce qu'il vous reste à faire, dans l'ordre
 
 1. **Choisir un hébergeur** pour le backend (Render/Railway/Fly/VPS),
@@ -290,12 +230,10 @@ pour la recevoir.
    dans le build).
 4. **Vérifier** `https://yukitraderpro.com/.well-known/assetlinks.json`
    répond bien avec la bonne empreinte une fois déployé.
-5. **Générer votre keystore en local** (voir `twa/keystore/README.md`),
-   puis dans **Android Studio** : ouvrir `twa/android-project/`,
-   synchroniser Gradle, générer le `.aab` signé avec VOTRE keystore.
-6. **Google Play Console** : créer l'app avec le nom de package
-   `com.yukitraderpro.app`, créer les deux produits d'abonnement, publier
-   le `.aab` en test fermé, ajouter des testeurs.
+5. **Android Studio** : ouvrir `twa/android-project/`, synchroniser
+   Gradle, générer le `.aab` signé avec le keystore fourni.
+6. **Google Play Console** : créer l'app, créer les deux produits
+   d'abonnement, publier le `.aab` en test fermé, ajouter des testeurs.
 7. **Tester réellement** sur un appareil Android : ouverture, connexion,
    abonnement (avec un compte testeur Play, achat "test").
 8. **Compléter** les champs juridiques manquants (`[À COMPLÉTER]`) et

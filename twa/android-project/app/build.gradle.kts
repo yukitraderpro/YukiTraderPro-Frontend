@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.yukitraderpro.app"
+    namespace = "com.yukitrader.pro"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.yukitraderpro.app"
+        applicationId = "com.yukitrader.pro"
         minSdk = 23
         targetSdk = 34
         // Harmonisé avec twa-manifest.json (cahier des charges V4 : versions à 4.0.0)
@@ -18,12 +18,9 @@ android {
 
     signingConfigs {
         create("release") {
-            // ⚠️ Keystore NON fourni par Claude (consigne du propriétaire :
-            // aucune clé de signature n'est générée ni livrée dans ce
-            // projet). Générez votre propre keystore EN LOCAL (voir
-            // twa/keystore/README.md) et placez-le à l'emplacement ci-dessous
-            // — jamais commité, jamais transmis. Mot de passe lu uniquement
-            // depuis une variable d'environnement, jamais en dur ici.
+            // Keystore RÉEL généré pour cette RC2 (voir twa/keystore/) — à
+            // déplacer hors du dépôt avant tout commit réel, voir
+            // twa/keystore/KEYSTORE_CREDENTIALS_A_PROTEGER.txt.
             storeFile = file("../keystore/android-release.keystore")
             storePassword = System.getenv("YUKI_KEYSTORE_PASSWORD") ?: ""
             keyAlias = "yuki-trader-pro"

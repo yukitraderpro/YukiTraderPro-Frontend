@@ -7,18 +7,15 @@
     <string name="host_placeholder">yukitraderpro.com</string>
     <string name="default_url">https://yukitraderpro.com/</string>
 
-    <!-- ⚠️ Empreinte SHA-256 À COMPLÉTER : Claude ne génère plus jamais de
-         keystore/clé de signature (consigne du propriétaire). Générez votre
-         propre keystore en local (voir twa/keystore/README.md), puis
-         remplacez la valeur ci-dessous par l'empreinte réelle obtenue avec :
-         keytool -list -v -keystore VOTRE-KEYSTORE -alias VOTRE-ALIAS -->
+    <!-- Empreinte SHA-256 RÉELLE (pas un exemple) du certificat de
+         twa/keystore/android-release.keystore, générée pour cette RC2. -->
     <string name="asset_statements">
         [{
           \"relation\": [\"delegate_permission/common.handle_all_urls\"],
           \"target\": {
             \"namespace\": \"android_app\",
-            \"package_name\": \"com.yukitraderpro.app\",
-            \"sha256_cert_fingerprints\": [\"REMPLACER_PAR_L_EMPREINTE_SHA256_DE_VOTRE_KEYSTORE_LOCAL\"]
+            \"package_name\": \"com.yukitrader.pro\",
+            \"sha256_cert_fingerprints\": [\"98:41:36:3C:F0:0E:1F:CF:49:73:6F:72:B8:9D:F1:48:9C:96:43:A3:2B:30:D3:36:B3:3E:CE:B4:9A:55:F0:6E\"]
           }
         }]
     </string>
