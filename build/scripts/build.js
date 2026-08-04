@@ -28,6 +28,7 @@ const JS_FILES = [
   'analysis.js',
   'app.js',
   'js/demo-data.js',
+  'js/share-card.js',
   'js/yuki-messages.js',
   'js/yuki-live.js',
   'js/yuki-knowledge.js',

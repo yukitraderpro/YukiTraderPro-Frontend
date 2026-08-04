@@ -250,3 +250,6 @@
 }
 .demo-banner button{margin-left:auto;padding:7px 12px;font-size:.85rem}
 .demo-banner.hidden-card{display:none}
+
+/* ---- Partage « Wrapped » ---- */
+.weekly-recap-share{margin-top:10px;padding:8px 14px;font-size:.85rem}
