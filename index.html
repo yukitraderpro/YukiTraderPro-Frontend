@@ -402,6 +402,8 @@
 <button id="testApiBtn" class="primary full" data-i18n="testBtn">Tester</button><p id="keyStatus" class="muted"></p></div>
 <div class="card"><h2 data-i18n="alertsTitle">Alertes</h2><label class="switch"><input id="autoScanToggle" type="checkbox"> <span data-i18n="autoScanLabel">Analyse automatique quand l’application reste ouverte</span></label>
 <label><span data-i18n="intervalLabel">Intervalle</span><select id="autoInterval"><option value="300000">5 minutes</option><option value="600000">10 minutes</option><option value="900000">15 minutes</option></select></label>
+<label><span data-i18n="settingsProfileLabel">Profil de trading</span><select id="tradingProfileSelect"><option value="">—</option><option value="scalping" data-i18n="obProfileScalping">Scalping</option><option value="day_trading" data-i18n="obProfileDayTrading">Day Trading</option><option value="swing" data-i18n="obProfileSwing">Swing Trading</option><option value="investment" data-i18n="obProfileInvestment">Investissement</option></select></label>
+<label><span data-i18n="settingsRiskLabel">Rapport au risque</span><select id="riskAppetiteSelect"><option value="">—</option><option value="prudent" data-i18n="obRiskPrudent">🛡️ Prudent</option><option value="equilibre" data-i18n="obRiskBalanced">⚖️ Équilibré</option><option value="dynamique" data-i18n="obRiskDynamic">⚡ Dynamique</option></select></label>
 <label><span data-i18n="minConfidenceLabel">Confiance minimale</span><input id="notifyThreshold" type="number" min="55" max="95"></label>
 <label class="switch"><input id="hotAlertToggle" type="checkbox"> <span data-i18n="hotAlertLabel">🔥 Alerte « opportunité exceptionnelle » : notification immédiate dès qu'un instrument surveillé atteint le seuil ci-dessous (ignore le filtre de qualité)</span></label>
 <label><span data-i18n="hotAlertThresholdLabel">Seuil opportunité exceptionnelle (%)</span><input id="hotAlertThreshold" type="number" min="80" max="97"></label>
@@ -530,6 +532,23 @@
   </div>
 
   <div class="ob-step" data-ob-step="4" hidden>
+    <h2 data-i18n="ob4RiskTitle">Quel est ton rapport au risque ?</h2>
+    <p class="muted" data-i18n="ob4RiskBody">Ça règle les seuils d'alerte par défaut — pas le moteur d'analyse, qui reste identique pour tout le monde. Modifiable à tout moment dans Réglages.</p>
+    <button type="button" class="ob-choice-card ob-risk-btn" data-risk="prudent">
+      <strong data-i18n="obRiskPrudent">🛡️ Prudent</strong>
+      <small data-i18n="obRiskPrudentDesc">Je veux peu d'alertes, uniquement les configurations les plus solides.</small>
+    </button>
+    <button type="button" class="ob-choice-card ob-risk-btn" data-risk="equilibre">
+      <strong data-i18n="obRiskBalanced">⚖️ Équilibré</strong>
+      <small data-i18n="obRiskBalancedDesc">Les réglages recommandés par défaut.</small>
+    </button>
+    <button type="button" class="ob-choice-card ob-risk-btn" data-risk="dynamique">
+      <strong data-i18n="obRiskDynamic">⚡ Dynamique</strong>
+      <small data-i18n="obRiskDynamicDesc">Je préfère voir plus d'opportunités, quitte à filtrer moi-même.</small>
+    </button>
+  </div>
+
+  <div class="ob-step" data-ob-step="5" hidden>
     <h2 data-i18n="ob4Title">Ta confidentialité</h2>
     <p class="muted" data-i18n="ob4Body">Tes données restent privées. Yuki Trader Pro ne revend aucune donnée. Certaines données anonymes, si tu les autorises, peuvent nous aider à améliorer l'application.</p>
     <label class="ob-toggle-row">
@@ -548,7 +567,7 @@
     <button type="button" class="primary full ob-next" data-i18n="obNext">Continuer</button>
   </div>
 
-  <div class="ob-step" data-ob-step="5" hidden>
+  <div class="ob-step" data-ob-step="6" hidden>
     <h2 data-i18n="ob5Title">Dernière étape</h2>
     <label class="ob-checkbox-row"><input type="checkbox" id="obTermsCheckbox"><span data-i18n="ob5Terms">J'accepte les Conditions Générales d'Utilisation</span></label>
     <label class="ob-checkbox-row"><input type="checkbox" id="obPrivacyCheckbox"><span data-i18n="ob5Privacy">J'accepte la Politique de confidentialité</span></label>
@@ -557,7 +576,7 @@
     <button type="button" id="obAcceptBtn" class="primary full" data-i18n="ob5Cta">J'accepte et je continue</button>
   </div>
 
-  <div class="ob-step" data-ob-step="6" hidden>
+  <div class="ob-step" data-ob-step="7" hidden>
     <div class="yuki-hero-wrapper"><img src="assets/images/yuki/yuki-avatar-250.png?v=20260719d" class="yuki-hero-image ob-final-anim" alt="Yuki" loading="lazy" decoding="async"></div>
     <h2 data-i18n="ob6Title">Ton espace est prêt.</h2>
     <p class="muted" data-i18n="ob6Body">Bonne analyse des marchés !</p>
