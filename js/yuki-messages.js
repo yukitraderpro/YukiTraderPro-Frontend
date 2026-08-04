@@ -270,6 +270,50 @@ function maskSecret(value) {
    habiller le résultat déjà produit par le moteur (analysis.js) avec une
    introduction et une clôture cohérentes avec la personnalité de Yuki,
    sans jamais reformuler ni inventer un chiffre. */
+/* ---- Réactions « Yuki Live » + Brief du matin -----------------------------
+   Petites phrases affichées dans une bulle éphémère quand un événement se
+   produit dans l'application (alerte exceptionnelle, série de signaux
+   évalués, sortie de position) et briques du brief du matin. Toujours
+   DESCRIPTIVES, jamais prescriptives : chaque texte passe par
+   isSafeMessage() avant affichage (voir js/yuki-live.js). */
+const LIVE_MESSAGES = {
+  fr: {
+    hotAlert: (name, conf) => `🔥 ${name} atteint ${conf}% de confiance — une configuration qui mérite ton attention. Examine les détails avant toute décision.`,
+    winStreak: n => `${n} signaux évalués gagnants d'affilée. Bonne dynamique — mais chaque signal reste indépendant du précédent.`,
+    lossStreak: n => `${n} signaux évalués perdants d'affilée. Le contexte de marché est peut-être difficile — attendre est aussi une stratégie.`,
+    positionExit: (name, pnl) => `Un critère de sortie est atteint sur ${name} (PnL ${pnl}%). Pense à vérifier ta position.`
+  },
+  en: {
+    hotAlert: (name, conf) => `🔥 ${name} reached ${conf}% confidence — a setup that deserves your attention. Review the details before any decision.`,
+    winStreak: n => `${n} evaluated signals in a row were winners. Good momentum — but each signal remains independent from the last.`,
+    lossStreak: n => `${n} evaluated signals in a row were losers. Market conditions may be tough — waiting is a strategy too.`,
+    positionExit: (name, pnl) => `An exit criterion was reached on ${name} (PnL ${pnl}%). Consider checking your position.`
+  }
+};
+
+const MORNING_BRIEF = {
+  fr: {
+    title: "🌅 Le brief du matin de Yuki",
+    greeting: name => `Bonjour${name ? " " + name : ""} !`,
+    marketBullish: (buy, sell) => `Sur les instruments surveillés, ${buy} signaux penchent à la hausse contre ${sell} à la baisse.`,
+    marketBearish: (buy, sell) => `Sur les instruments surveillés, ${sell} signaux penchent à la baisse contre ${buy} à la hausse.`,
+    marketNeutral: () => `Les instruments surveillés n'affichent pas de direction dominante ce matin.`,
+    topOpportunity: (name, conf, quality) => `${name} se démarque avec ${conf}% de confiance (qualité ${quality}) — à examiner si ça correspond à ton plan.`,
+    noOpportunity: "Aucune configuration nette pour l'instant — ça peut changer en cours de séance.",
+    closing: "Bonne séance ! La décision finale reste toujours la tienne."
+  },
+  en: {
+    title: "🌅 Yuki's morning brief",
+    greeting: name => `Good morning${name ? " " + name : ""}!`,
+    marketBullish: (buy, sell) => `Across watched instruments, ${buy} signals lean bullish versus ${sell} bearish.`,
+    marketBearish: (buy, sell) => `Across watched instruments, ${sell} signals lean bearish versus ${buy} bullish.`,
+    marketNeutral: () => `Watched instruments show no dominant direction this morning.`,
+    topOpportunity: (name, conf, quality) => `${name} stands out with ${conf}% confidence (quality ${quality}) — worth reviewing if it fits your plan.`,
+    noOpportunity: "No clear setup for now — this can change during the session.",
+    closing: "Have a good session! The final decision is always yours."
+  }
+};
+
 const EXPLAIN_TEMPLATES = {
   fr: {
     simpleIntro: "Voici ce que je peux t'expliquer simplement :",
@@ -287,13 +331,13 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     YUKI_IDENTITY_STATEMENT, ALLOWED_PHRASES, FORBIDDEN_PATTERNS,
     normalizeForGuard, findForbiddenPhrase, isSafeMessage, normLang,
-    MESSAGES, getMessage, maskSecret, EXPLAIN_TEMPLATES
+    MESSAGES, getMessage, maskSecret, EXPLAIN_TEMPLATES, LIVE_MESSAGES, MORNING_BRIEF
   };
 }
 if (typeof window !== "undefined") {
   window.YukiMessages = {
     YUKI_IDENTITY_STATEMENT, ALLOWED_PHRASES, FORBIDDEN_PATTERNS,
     normalizeForGuard, findForbiddenPhrase, isSafeMessage, normLang,
-    MESSAGES, getMessage, maskSecret, EXPLAIN_TEMPLATES
+    MESSAGES, getMessage, maskSecret, EXPLAIN_TEMPLATES, LIVE_MESSAGES, MORNING_BRIEF
   };
 }

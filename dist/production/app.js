@@ -41,7 +41,7 @@ let state=null,autoTimer=null,currentHorizon="1h";
 function escapeHtml(s){
 return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-function initial(){return{scalping:{enabled:false,instrument:"NDX",position:null,lastSignal:null},selected:"NVDA",custom:[],lastAnalysis:null,scalping:{enabled:false,instrument:"NDX",position:null,lastSignal:null},favorites:["NVDA","AMD","MSFT","ASML"],positions:[],journal:[],signals:[],apiKey:"",prefs:{auto:false,interval:300000,notifyThreshold:75,notifyCooldownMinutes:20,minQualityGrade:"C",economyMode:false,dailyApiCreditEstimate:800,perMinuteApiCreditEstimate:8,uiMode:null,tradingProfile:null},notifyLog:{},indicatorWeights:defaultIndicatorWeights(),signalStats:{evaluated:0,wins:0,losses:0,neutral:0},apiUsage:{calls:[],dailyCount:0,dailyResetAt:0},positionResilience:{},apiTechnicalLog:[],csvImports:[],csvImportedRows:[],
+function initial(){return{scalping:{enabled:false,instrument:"NDX",position:null,lastSignal:null},selected:"NVDA",custom:[],lastAnalysis:null,scalping:{enabled:false,instrument:"NDX",position:null,lastSignal:null},favorites:["NVDA","AMD","MSFT","ASML"],positions:[],journal:[],signals:[],apiKey:"",prefs:{auto:false,interval:300000,notifyThreshold:75,notifyCooldownMinutes:20,hotAlertEnabled:true,hotAlertThreshold:90,minQualityGrade:"C",economyMode:false,dailyApiCreditEstimate:800,perMinuteApiCreditEstimate:8,uiMode:null,tradingProfile:null},notifyLog:{},indicatorWeights:defaultIndicatorWeights(),signalStats:{evaluated:0,wins:0,losses:0,neutral:0},apiUsage:{calls:[],dailyCount:0,dailyResetAt:0},positionResilience:{},apiTechnicalLog:[],csvImports:[],csvImportedRows:[],
 onboarding:{completed:false,step:1,privacy:{notifications:false,crashReports:false,anonymousStats:false},termsAcceptedAt:null,welcomeSummaryShown:false}
 }}
 function load(){
@@ -252,6 +252,11 @@ if(outcome==="gagnant")state.signalStats.wins++;
 else if(outcome==="perdant")state.signalStats.losses++;
 else state.signalStats.neutral++;
 if(outcome==="gagnant"||outcome==="perdant"){
+const st=state.streak&&state.streak.type===outcome?state.streak:{type:outcome,count:0};
+st.count++;state.streak=st;
+if(st.count===3&&window.YukiLive)try{window.YukiLive.react(outcome==="gagnant"?"winStreak":"lossStreak",{count:3,panel:"journal"})}catch{}
+}
+if(outcome==="gagnant"||outcome==="perdant"){
 state.indicatorWeights=updateIndicatorWeights(state.indicatorWeights,s.votes||[],s.signal,outcome);
 }
 }
@@ -282,7 +287,25 @@ function meetsMinQuality(grade){
 const min=state.prefs.minQualityGrade||"C";
 return (QUALITY_RANK[grade]??0)>=(QUALITY_RANK[min]??1);
 }
+function maybeHotNotify(r){
+if(state.prefs.hotAlertEnabled===false) return false;
+const th=+state.prefs.hotAlertThreshold||90;
+if(r.signal==="ATTENDRE" || r.insufficientData || r.confidence < th) return false;
+state.hotNotifyLog=state.hotNotifyLog||{};
+const log=state.hotNotifyLog[r.item.id],now=Date.now(),cooldownMs=(state.prefs.notifyCooldownMinutes||20)*60000;
+if(log && log.signal===r.signal && (now-log.time)<cooldownMs) return true;
+state.hotNotifyLog[r.item.id]={signal:r.signal,time:now};
+save();
+showYukiNotification(
+`🔥 ${t("hotAlertTitle")} · ${r.confidence}%`,
+`${trSignal(r.signal)} · ${r.item.name} · ${r.quality||""} · ${t("fieldPrice")} ${money(r.price)}${r.item.xtb?(" · "+r.item.xtb):""}`,
+{tag:`hot-${r.item.id}`, panel:"home", instrumentId:r.item.id}
+);
+if(window.YukiLive)try{window.YukiLive.react("hotAlert",{name:r.item.name,confidence:r.confidence,panel:"home"})}catch{}
+return true;
+}
 function maybeNotify(r){
+if(maybeHotNotify(r)) return;
 if(r.signal==="ATTENDRE" || r.insufficientData || r.confidence < state.prefs.notifyThreshold || !meetsMinQuality(r.quality)) return;
 state.notifyLog=state.notifyLog||{};
 const log=state.notifyLog[r.item.id],now=Date.now(),cooldownMs=(state.prefs.notifyCooldownMinutes||20)*60000;
@@ -392,6 +415,7 @@ pos.lastAction=e.action;
 if(previousAction&&"Notification"in window&&Notification.permission==="granted"){
 showYukiNotification("Yuki Trader Pro",`${trAction(e.action)} · ${item.name} — ${trReason(e.reason)} · ${t("fieldPrice")} ${money(e.price)} · PnL ${e.pnl.toFixed(2)}%`,{tag:`position-${pos.uid}`,panel:"portfolio"});
 }
+if(previousAction&&e.action==="SORTIR"&&window.YukiLive)try{window.YukiLive.react("positionExit",{name:item.name,pnl:e.pnl.toFixed(2),panel:"positions"})}catch{}
 }
 }catch(err){
 res.consecutiveFailures=(res.consecutiveFailures||0)+1;
@@ -628,7 +652,7 @@ function toggleFavorite(){const id=state.selected,list=state.favorites||(state.f
 function renderFavorites(){const box=$("favoritesList");if(!box)return;const list=state.favorites||[];if(!list.length){box.innerHTML=`<div class="item muted">${t("noFavorites")}</div>`;return}box.innerHTML=list.map(id=>{const item=allCatalog().find(x=>x.id===id);if(!item)return"";return `<div class="item"><strong>${item.name}</strong><small>${item.xtb||""} · ${item.type}</small></div>`}).join("")}
 function renderSearch(query){const box=$("searchResults");if(!box)return;query=(query||"").trim().toLowerCase();if(!query){box.innerHTML="";return}const results=allCatalog().filter(x=>x.name.toLowerCase().includes(query)||(x.isin||"").toLowerCase().includes(query)||(x.xtb||"").toLowerCase().includes(query)||x.symbol.toLowerCase().includes(query)).slice(0,15);box.innerHTML=results.map(x=>`<div class="item" data-id="${x.id}"><strong>${x.name}</strong><small>${x.xtb||""} · ${x.type}</small></div>`).join("");box.querySelectorAll(".item").forEach(el=>el.onclick=()=>{state.selected=el.dataset.id;save();$("instrumentSelect").value=state.selected;updateFavoriteButton();box.innerHTML="";$("globalSearch").value=""})}
 function scanList(list,targetId,progressId){const box=$(targetId),progress=$(progressId);if(!box)return;box.innerHTML="";if(progress)progress.textContent=t("analyzingInProgress");(async()=>{const settled=await Promise.allSettled(list.map(item=>analyseItem(item,false,false)));const results=settled.filter(x=>x.status==="fulfilled").map(x=>x.value);results.sort((a,b)=>b.confidence-a.confidence);box.innerHTML=results.length?results.map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}% · ${r.quality}</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join(""):`<div class="item muted">${t("noResults")}</div>`;if(progress)progress.textContent=t("doneAnalyzedSuffix")(results.length)})()}
-function populate(){$("instrumentSelect").innerHTML=allCatalog().map(x=>`<option value="${x.id}">${x.name} · ${x.type}</option>`).join("");$("instrumentSelect").value=state.selected;$("positionInstrument").innerHTML=CATALOG.filter(x=>x.type==="CFD").map(x=>`<option value="${x.id}">${x.name} · ${x.xtb}</option>`).join("");const scalpItems=SCALP_IDS.map(id=>allCatalog().find(x=>x.id===id)).filter(Boolean);$("scalpingInstrument").innerHTML=scalpItems.map(x=>`<option value="${x.id}">${x.xtb||x.symbol} · ${x.name}</option>`).join("");const sectors=[...new Set(CATALOG.map(x=>x.sector))].sort();$("sectorFilter").innerHTML='<option value="">Tous</option>'+sectors.map(x=>`<option>${x}</option>`).join("");$("autoScanToggle").checked=state.prefs.auto;$("autoInterval").value=String(state.prefs.interval);$("notifyThreshold").value=state.prefs.notifyThreshold;if($("notifyCooldown"))$("notifyCooldown").value=String(state.prefs.notifyCooldownMinutes||20);if($("minQualityGrade"))$("minQualityGrade").value=state.prefs.minQualityGrade||"C";if($("economyModeToggle"))$("economyModeToggle").checked=!!state.prefs.economyMode;if($("dailyApiCreditInput"))$("dailyApiCreditInput").value=state.prefs.dailyApiCreditEstimate||800;if($("perMinuteApiCreditInput"))$("perMinuteApiCreditInput").value=state.prefs.perMinuteApiCreditEstimate||8;renderApiUsage();renderFavorites();renderStats();renderKeyUi();updateFavoriteButton()}
+function populate(){$("instrumentSelect").innerHTML=allCatalog().map(x=>`<option value="${x.id}">${x.name} · ${x.type}</option>`).join("");$("instrumentSelect").value=state.selected;$("positionInstrument").innerHTML=CATALOG.filter(x=>x.type==="CFD").map(x=>`<option value="${x.id}">${x.name} · ${x.xtb}</option>`).join("");const scalpItems=SCALP_IDS.map(id=>allCatalog().find(x=>x.id===id)).filter(Boolean);$("scalpingInstrument").innerHTML=scalpItems.map(x=>`<option value="${x.id}">${x.xtb||x.symbol} · ${x.name}</option>`).join("");const sectors=[...new Set(CATALOG.map(x=>x.sector))].sort();$("sectorFilter").innerHTML='<option value="">Tous</option>'+sectors.map(x=>`<option>${x}</option>`).join("");$("autoScanToggle").checked=state.prefs.auto;$("autoInterval").value=String(state.prefs.interval);$("notifyThreshold").value=state.prefs.notifyThreshold;if($("hotAlertToggle"))$("hotAlertToggle").checked=state.prefs.hotAlertEnabled!==false;if($("hotAlertThreshold"))$("hotAlertThreshold").value=state.prefs.hotAlertThreshold||90;if($("notifyCooldown"))$("notifyCooldown").value=String(state.prefs.notifyCooldownMinutes||20);if($("minQualityGrade"))$("minQualityGrade").value=state.prefs.minQualityGrade||"C";if($("economyModeToggle"))$("economyModeToggle").checked=!!state.prefs.economyMode;if($("dailyApiCreditInput"))$("dailyApiCreditInput").value=state.prefs.dailyApiCreditEstimate||800;if($("perMinuteApiCreditInput"))$("perMinuteApiCreditInput").value=state.prefs.perMinuteApiCreditEstimate||8;renderApiUsage();renderFavorites();renderStats();renderKeyUi();updateFavoriteButton()}
 function openPanel(name){
 document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
 document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));
@@ -831,11 +855,16 @@ creditUsageRatio:stats.ratio
 });
 return Math.round(base*mult);
 }
+let hotScanLast=0;
 function startAuto(){
 clearTimeout(autoTimer);autoTimer=null;
 if(!(state.prefs.auto&&state.apiKey))return;
 const tick=()=>{
 analyseItem(current(),true,true).catch(()=>{}).finally(()=>{
+if(state.prefs.hotAlertEnabled!==false){
+const now=Date.now(),hotEvery=Math.max(effectiveAutoIntervalMs()*3,10*60000);
+if(now-hotScanLast>hotEvery){hotScanLast=now;refreshHomeOpportunities().catch(()=>{})}
+}
 if(state.prefs.auto&&state.apiKey)autoTimer=setTimeout(tick,effectiveAutoIntervalMs());
 });
 };
@@ -862,6 +891,7 @@ box.innerHTML=`<div class="item ${best.signal==="ACHETER"?"ok":best.signal==="VE
 <div class="item-head"><strong class="${best.signal==="ACHETER"?"buy":best.signal==="VENDRE"?"sell":"hold"}">${trSignal(best.signal)} · ${best.item.name}</strong><strong>${best.confidence}% · ${best.quality}</strong></div>
 <small>${best.item.xtb||""} · ${t("fieldPrice")} ${money(best.price)} · ${best.reason||""}</small></div>`;
 top5box.innerHTML=results.slice(0,5).map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}%</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join("");
+results.forEach(r=>{try{maybeHotNotify(r)}catch{}});
 renderMarketState(results);
 renderAiScore(results);
 window.__yukiLastOpportunityResults=results;
@@ -875,6 +905,27 @@ const buyCount=results.filter(r=>r.signal==="ACHETER").length;
 const sellCount=results.filter(r=>r.signal==="VENDRE").length;
 let user=null; try{ user=typeof currentUser==="function"?currentUser():null; }catch{}
 const name=user&&user.email?user.email.split("@")[0]:null;
+const today=new Date().toISOString().slice(0,10);
+const MB=window.YukiMessages&&window.YukiMessages.MORNING_BRIEF;
+const safeCheck=window.YukiMessages&&window.YukiMessages.isSafeMessage;
+if(MB&&safeCheck&&state.lastMorningBriefDate!==today){
+const lang=typeof currentLang==="function"?currentLang():"fr";
+const m=MB[lang]||MB.fr;
+const best=results.filter(r=>r.signal!=="ATTENDRE"&&!r.insufficientData).sort((a,b)=>b.confidence-a.confidence)[0];
+const lines=[m.title,m.greeting(name)];
+if(buyCount>sellCount*1.3&&buyCount>=2)lines.push(m.marketBullish(buyCount,sellCount));
+else if(sellCount>buyCount*1.3&&sellCount>=2)lines.push(m.marketBearish(buyCount,sellCount));
+else lines.push(m.marketNeutral());
+lines.push(best?m.topOpportunity(best.item.name,best.confidence,best.quality||"—"):m.noOpportunity);
+lines.push(m.closing);
+const text=lines.join(" ");
+if(safeCheck(text)){
+state.lastMorningBriefDate=today;save();
+textEl.textContent=text;
+box.classList.remove("hidden-card");
+return;
+}
+}
 const lines=[
 t("smartSummaryGreeting")(name),
 t("smartSummaryOpportunities")(buyCount)
@@ -1139,7 +1190,7 @@ $("confirmExecutedBtn").onclick=saveDeclaredPosition;
 $("addPositionBtn").onclick=()=>{const e=+$("entryPrice").value,r=+$("positionRisk").value;if(!e||e<=0)return alert(t("msgInvalidPrice"));state.positions.push({uid:String(Date.now()),id:$("positionInstrument").value,side:$("positionSide").value,entry:e,risk:r||1,declared:false,createdAt:new Date().toLocaleString("fr-FR")});save();refreshPositions()};
 if($("refreshPositionsBtn"))$("refreshPositionsBtn").onclick=()=>forceRefreshAllPositions();
 $("saveApiKeyBtn").onclick=()=>saveAndTest($("apiKeyInput").value);$("onboardingSave").onclick=()=>saveAndTest($("onboardingKey").value);$("deleteApiKeyBtn").onclick=()=>{if(confirm(t("msgConfirmDeleteKey"))){state.apiKey="";save();renderKeyUi();setStatus(false,t("apiKeyMissing"))}};$("testApiBtn").onclick=testApi;
-$("autoScanToggle").onchange=()=>{state.prefs.auto=$("autoScanToggle").checked;save();startAuto()};$("savePrefsBtn").onclick=()=>{state.prefs.interval=+$("autoInterval").value;state.prefs.notifyThreshold=+$("notifyThreshold").value;if($("notifyCooldown"))state.prefs.notifyCooldownMinutes=+$("notifyCooldown").value;if($("minQualityGrade"))state.prefs.minQualityGrade=$("minQualityGrade").value;save();startAuto();alert(t("msgPrefsSaved"))};
+$("autoScanToggle").onchange=()=>{state.prefs.auto=$("autoScanToggle").checked;save();startAuto()};$("savePrefsBtn").onclick=()=>{state.prefs.interval=+$("autoInterval").value;state.prefs.notifyThreshold=+$("notifyThreshold").value;if($("hotAlertToggle"))state.prefs.hotAlertEnabled=$("hotAlertToggle").checked;if($("hotAlertThreshold"))state.prefs.hotAlertThreshold=Math.min(97,Math.max(80,+$("hotAlertThreshold").value||90));if($("notifyCooldown"))state.prefs.notifyCooldownMinutes=+$("notifyCooldown").value;if($("minQualityGrade"))state.prefs.minQualityGrade=$("minQualityGrade").value;save();startAuto();alert(t("msgPrefsSaved"))};
 if($("saveApiUsagePrefsBtn"))$("saveApiUsagePrefsBtn").onclick=()=>{
 state.prefs.economyMode=$("economyModeToggle").checked;
 state.prefs.dailyApiCreditEstimate=Math.max(50,+$("dailyApiCreditInput").value||800);
