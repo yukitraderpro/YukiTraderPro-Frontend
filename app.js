@@ -1123,8 +1123,22 @@ function renderWeeklyRecap(){
   const p=document.createElement("p");p.textContent=text;
   const close=document.createElement("button");close.textContent="✕";close.className="weekly-recap-close";close.setAttribute("aria-label","Fermer");
   close.onclick=()=>box.classList.add("hidden-card");
-  box.append(title,close,p);
+  const shareBtn=document.createElement("button");
+  shareBtn.className="primary weekly-recap-share";
+  shareBtn.textContent=t("shareWeekBtn");
+  shareBtn.onclick=()=>shareWeeklyCard();
+  box.append(title,close,p,shareBtn);
   box.classList.remove("hidden-card");
+}
+/* Partage « Wrapped » : carte image générée en local (js/share-card.js).
+   Accessible depuis le récap hebdo ET depuis le journal (bouton permanent),
+   pour ne pas dépendre du dimanche. */
+function shareWeeklyCard(){
+  if(!window.YukiShareCard)return;
+  const weekAgo=Date.now()-7*86400000;
+  const checkinDays=((state.checkin&&state.checkin.days)||[]).filter(d=>new Date(d).getTime()>=weekAgo).length;
+  const stats=window.YukiShareCard.buildWeeklyShareStats(state.signals||[],checkinDays);
+  window.YukiShareCard.shareWeekly(stats).catch(()=>{});
 }
 
 async function refreshHomeOpportunities(){
@@ -1599,6 +1613,7 @@ if($("etfScanBtn"))$("etfScanBtn").onclick=()=>{const list=CATALOG.filter(x=>x.t
 if($("adminRefreshBtn"))$("adminRefreshBtn").onclick=renderAdmin;
 refreshHomeOpportunities().catch(()=>{});
 try{updateCheckinStreak();renderCheckinBadge();renderWeeklyRecap()}catch{}
+if($("shareWeekJournalBtn"))$("shareWeekJournalBtn").onclick=()=>shareWeeklyCard();
 if($("etfCount"))$("etfCount").textContent=CATALOG.filter(x=>x.type==="ETF").length;
 if(typeof currentUser==="function"){
   renderAccountSettings();

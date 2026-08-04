@@ -239,7 +239,7 @@
 </section>
 
 <section id="journal" class="panel">
-<div class="card"><h2 data-i18n="journalTitle">Journal de trading</h2>
+<div class="card"><div class="item-head"><h2 data-i18n="journalTitle">Journal de trading</h2><button id="shareWeekJournalBtn" data-i18n="shareWeekBtn">📤 Partager ma semaine</button></div>
 <p class="muted" data-i18n="journalDesc">Chaque position clôturée depuis « Positions CFD » est enregistrée ici automatiquement, avec le résultat réel déclaré par toi.</p>
 <div class="stats-grid">
 <div><span data-i18n="closedTradesLabel">Trades clôturés</span><strong id="journalTrades">0</strong></div>
@@ -591,6 +591,7 @@
 <script src="push-client.js"></script>
 <script src="api-cache.js"></script>
 <script src="js/demo-data.js"></script>
+<script src="js/share-card.js"></script>
 <script src="analysis.js"></script>
 <script src="app.js"></script>
 <script src="js/yuki-messages.js"></script>
