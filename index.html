@@ -396,6 +396,8 @@
 <div class="card"><h2 data-i18n="alertsTitle">Alertes</h2><label class="switch"><input id="autoScanToggle" type="checkbox"> <span data-i18n="autoScanLabel">Analyse automatique quand l’application reste ouverte</span></label>
 <label><span data-i18n="intervalLabel">Intervalle</span><select id="autoInterval"><option value="300000">5 minutes</option><option value="600000">10 minutes</option><option value="900000">15 minutes</option></select></label>
 <label><span data-i18n="minConfidenceLabel">Confiance minimale</span><input id="notifyThreshold" type="number" min="55" max="95"></label>
+<label class="switch"><input id="hotAlertToggle" type="checkbox"> <span data-i18n="hotAlertLabel">🔥 Alerte « opportunité exceptionnelle » : notification immédiate dès qu'un instrument surveillé atteint le seuil ci-dessous (ignore le filtre de qualité)</span></label>
+<label><span data-i18n="hotAlertThresholdLabel">Seuil opportunité exceptionnelle (%)</span><input id="hotAlertThreshold" type="number" min="80" max="97"></label>
 <label><span data-i18n="minQualityLabel">Qualité minimale pour être notifié</span>
 <select id="minQualityGrade"><option value="D" data-i18n="qualityDAndUp">D et plus (tout signal)</option><option value="C" data-i18n="qualityCAndUp">C et plus</option><option value="B" data-i18n="qualityBAndUp">B et plus</option><option value="A" data-i18n="qualityAOnly">A et A+ uniquement</option><option value="A+" data-i18n="qualityAPlusOnly">A+ uniquement</option></select></label>
 <label><span data-i18n="antiSpamLabel">Anti-spam : délai minimal avant une nouvelle alerte identique</span>
@@ -480,7 +482,7 @@
   <p class="tiny muted ob-step-label" id="obStepLabel"></p>
 
   <div class="ob-step" data-ob-step="1">
-    <div class="yuki-hero-wrapper"><img src="assets/images/yuki/yuki-avatar-250.png?v=20260719d" class="yuki-hero-image" alt="Yuki"></div>
+    <div class="yuki-hero-wrapper"><img src="assets/images/yuki/yuki-avatar-250.png?v=20260719d" class="yuki-hero-image" alt="Yuki" loading="lazy" decoding="async"></div>
     <h2 data-i18n="ob1Title">Bonjour, je suis Yuki 👋</h2>
     <p class="muted" data-i18n="ob1Body">Je serai ton assistant tout au long de ton utilisation de Yuki Trader Pro. Je t'aide à comprendre les marchés, mais je ne prends jamais les décisions à ta place.</p>
     <button type="button" class="primary full ob-next" data-i18n="ob1Cta">Commencer</button>
@@ -549,7 +551,7 @@
   </div>
 
   <div class="ob-step" data-ob-step="6" hidden>
-    <div class="yuki-hero-wrapper"><img src="assets/images/yuki/yuki-avatar-250.png?v=20260719d" class="yuki-hero-image ob-final-anim" alt="Yuki"></div>
+    <div class="yuki-hero-wrapper"><img src="assets/images/yuki/yuki-avatar-250.png?v=20260719d" class="yuki-hero-image ob-final-anim" alt="Yuki" loading="lazy" decoding="async"></div>
     <h2 data-i18n="ob6Title">Ton espace est prêt.</h2>
     <p class="muted" data-i18n="ob6Body">Bonne analyse des marchés !</p>
     <button type="button" id="obFinishBtn" class="primary full" data-i18n="ob6Cta">Accéder au tableau de bord</button>
@@ -584,6 +586,7 @@
 <script src="analysis.js"></script>
 <script src="app.js"></script>
 <script src="js/yuki-messages.js"></script>
+<script src="js/yuki-live.js"></script>
 <script src="js/yuki-knowledge.js"></script>
 <script src="js/yuki-assistant.js"></script>
 <script src="csv-import-client.js"></script>

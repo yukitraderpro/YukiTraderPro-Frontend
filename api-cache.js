@@ -262,6 +262,53 @@ const POSITION_STATUS_LABELS = {
 
   function cacheKey(symbol, interval, exchange) { return `${symbol}|${interval}|${exchange || ""}`; }
 
+  /* ---- Persistance du cache entre sessions (optimisation V4.3) -----------
+     Le cache ne vivait qu'en mémoire : chaque réouverture de la PWA
+     repartait de zéro (tableau de bord lent + crédits API re-consommés
+     pour des données dont le TTL n'était même pas expiré). On persiste
+     donc les entrées dans localStorage :
+     - DONNÉES DE MARCHÉ UNIQUEMENT (bougies publiques) — jamais de clé
+       API, de token ni de donnée personnelle dans ces entrées ;
+     - écriture différée (300 ms) pour ne pas sérialiser à chaque set ;
+     - plafond de 40 entrées les plus récentes (~ quelques centaines de Ko
+       max) pour respecter le quota localStorage ;
+     - au chargement, les entrées trop anciennes (> 24 h) sont jetées, les
+       autres reprennent leur cycle normal : getCached() respecte toujours
+       le TTL, getStaleCached() garde son rôle de secours hors ligne.
+     Mêmes données → mêmes résultats : ce mécanisme ne change jamais ce que
+     l'analyse reçoit, seulement d'où ça vient (disque au lieu du réseau). */
+  const PERSIST_KEY = "yuki_pro_api_cache_v1";
+  const PERSIST_MAX_ENTRIES = 40;
+  const PERSIST_MAX_AGE_MS = 24 * 3600 * 1000;
+  let persistTimer = null;
+
+  function loadPersistedCache() {
+    if (typeof localStorage === "undefined") return;
+    try {
+      const raw = localStorage.getItem(PERSIST_KEY);
+      if (!raw) return;
+      const obj = JSON.parse(raw);
+      const now = Date.now();
+      for (const [key, entry] of Object.entries(obj)) {
+        if (!entry || !entry.cachedAt || now - entry.cachedAt > PERSIST_MAX_AGE_MS) continue;
+        if (!cacheStore.has(key)) cacheStore.set(key, entry);
+      }
+    } catch { /* cache corrompu ou quota : on repart simplement de zéro */ try { localStorage.removeItem(PERSIST_KEY); } catch {} }
+  }
+
+  function schedulePersist() {
+    if (typeof localStorage === "undefined") return;
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      try {
+        const entries = [...cacheStore.entries()]
+          .sort((a, b) => (b[1].cachedAt || 0) - (a[1].cachedAt || 0))
+          .slice(0, PERSIST_MAX_ENTRIES);
+        localStorage.setItem(PERSIST_KEY, JSON.stringify(Object.fromEntries(entries)));
+      } catch { /* quota plein : le cache mémoire continue de fonctionner normalement */ }
+    }, 300);
+  }
+
   function getCached(key) {
     const entry = cacheStore.get(key);
     if (!entry) return null;
@@ -282,9 +329,15 @@ const POSITION_STATUS_LABELS = {
   function setCached(key, data, interval) {
     const ttl = computeCacheTtlMs(interval, isEconomyMode());
     cacheStore.set(key, { data, expiresAt: Date.now() + ttl, cachedAt: Date.now() });
+    schedulePersist();
   }
 
-  function clearCache() { cacheStore.clear(); }
+  function clearCache() {
+    cacheStore.clear();
+    if (typeof localStorage !== "undefined") { try { localStorage.removeItem(PERSIST_KEY); } catch {} }
+  }
+
+  loadPersistedCache(); // au chargement du module : réhydrate le cache de la session précédente
 
   /* File d'attente : espace les vrais appels réseau pour éviter les rafales
      qui déclenchent des erreurs de limite de débit (429) chez le fournisseur. */
@@ -349,7 +402,7 @@ root.YukiApiOptimizer = {
   computeCacheTtlMs, adaptivePollMultiplier, friendlyApiError,
   classifyError, nextBackoffDelayMs, classifyPositionStatus, POSITION_STATUS_LABELS,
   POSITION_NORMAL_RHYTHM_MS, getStaleCached,
-  _internal: { cacheStore, queue } // exposé pour les tests/diagnostics uniquement
+  _internal: { cacheStore, queue, getCached, setCached, getStaleCached, clearCache } // exposé pour les tests/diagnostics uniquement
 };
 })(typeof window !== "undefined" ? window : globalThis);
 
