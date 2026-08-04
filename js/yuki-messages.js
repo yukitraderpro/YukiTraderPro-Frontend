@@ -281,13 +281,15 @@ const LIVE_MESSAGES = {
     hotAlert: (name, conf) => `🔥 ${name} atteint ${conf}% de confiance — une configuration qui mérite ton attention. Examine les détails avant toute décision.`,
     winStreak: n => `${n} signaux évalués gagnants d'affilée. Bonne dynamique — mais chaque signal reste indépendant du précédent.`,
     lossStreak: n => `${n} signaux évalués perdants d'affilée. Le contexte de marché est peut-être difficile — attendre est aussi une stratégie.`,
-    positionExit: (name, pnl) => `Un critère de sortie est atteint sur ${name} (PnL ${pnl}%). Pense à vérifier ta position.`
+    positionExit: (name, pnl) => `Un critère de sortie est atteint sur ${name} (PnL ${pnl}%). Pense à vérifier ta position.`,
+    profileApplied: horizon => `Profil enregistré ! J'ai réglé l'horizon d'analyse par défaut sur « ${horizon} » et adapté tes seuils d'alerte. Tout reste modifiable dans Réglages.`
   },
   en: {
     hotAlert: (name, conf) => `🔥 ${name} reached ${conf}% confidence — a setup that deserves your attention. Review the details before any decision.`,
     winStreak: n => `${n} evaluated signals in a row were winners. Good momentum — but each signal remains independent from the last.`,
     lossStreak: n => `${n} evaluated signals in a row were losers. Market conditions may be tough — waiting is a strategy too.`,
-    positionExit: (name, pnl) => `An exit criterion was reached on ${name} (PnL ${pnl}%). Consider checking your position.`
+    positionExit: (name, pnl) => `An exit criterion was reached on ${name} (PnL ${pnl}%). Consider checking your position.`,
+    profileApplied: horizon => `Profile saved! I set the default analysis horizon to "${horizon}" and adjusted your alert thresholds. Everything remains editable in Settings.`
   }
 };
 

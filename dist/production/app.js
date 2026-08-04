@@ -41,7 +41,7 @@ let state=null,autoTimer=null,currentHorizon="1h";
 function escapeHtml(s){
 return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-function initial(){return{scalping:{enabled:false,instrument:"NDX",position:null,lastSignal:null},selected:"NVDA",custom:[],lastAnalysis:null,scalping:{enabled:false,instrument:"NDX",position:null,lastSignal:null},favorites:["NVDA","AMD","MSFT","ASML"],positions:[],journal:[],signals:[],apiKey:"",prefs:{auto:false,interval:300000,notifyThreshold:75,notifyCooldownMinutes:20,hotAlertEnabled:true,hotAlertThreshold:90,minQualityGrade:"C",economyMode:false,dailyApiCreditEstimate:800,perMinuteApiCreditEstimate:8,uiMode:null,tradingProfile:null},notifyLog:{},indicatorWeights:defaultIndicatorWeights(),signalStats:{evaluated:0,wins:0,losses:0,neutral:0},apiUsage:{calls:[],dailyCount:0,dailyResetAt:0},positionResilience:{},apiTechnicalLog:[],csvImports:[],csvImportedRows:[],
+function initial(){return{scalping:{enabled:false,instrument:"NDX",position:null,lastSignal:null},selected:"NVDA",custom:[],lastAnalysis:null,scalping:{enabled:false,instrument:"NDX",position:null,lastSignal:null},favorites:["NVDA","AMD","MSFT","ASML"],positions:[],journal:[],signals:[],apiKey:"",prefs:{auto:false,interval:300000,notifyThreshold:75,notifyCooldownMinutes:20,hotAlertEnabled:true,hotAlertThreshold:90,minQualityGrade:"C",economyMode:false,dailyApiCreditEstimate:800,perMinuteApiCreditEstimate:8,uiMode:null,tradingProfile:null,riskAppetite:null,preferredHorizon:null},notifyLog:{},indicatorWeights:defaultIndicatorWeights(),signalStats:{evaluated:0,wins:0,losses:0,neutral:0},apiUsage:{calls:[],dailyCount:0,dailyResetAt:0},positionResilience:{},apiTechnicalLog:[],csvImports:[],csvImportedRows:[],
 onboarding:{completed:false,step:1,privacy:{notifications:false,crashReports:false,anonymousStats:false},termsAcceptedAt:null,welcomeSummaryShown:false}
 }}
 function load(){
@@ -660,7 +660,7 @@ function toggleFavorite(){const id=state.selected,list=state.favorites||(state.f
 function renderFavorites(){const box=$("favoritesList");if(!box)return;const list=state.favorites||[];if(!list.length){box.innerHTML=`<div class="item muted">${t("noFavorites")}</div>`;return}box.innerHTML=list.map(id=>{const item=allCatalog().find(x=>x.id===id);if(!item)return"";return `<div class="item"><strong>${item.name}</strong><small>${item.xtb||""} · ${item.type}</small></div>`}).join("")}
 function renderSearch(query){const box=$("searchResults");if(!box)return;query=(query||"").trim().toLowerCase();if(!query){box.innerHTML="";return}const results=allCatalog().filter(x=>x.name.toLowerCase().includes(query)||(x.isin||"").toLowerCase().includes(query)||(x.xtb||"").toLowerCase().includes(query)||x.symbol.toLowerCase().includes(query)).slice(0,15);box.innerHTML=results.map(x=>`<div class="item" data-id="${x.id}"><strong>${x.name}</strong><small>${x.xtb||""} · ${x.type}</small></div>`).join("");box.querySelectorAll(".item").forEach(el=>el.onclick=()=>{state.selected=el.dataset.id;save();$("instrumentSelect").value=state.selected;updateFavoriteButton();box.innerHTML="";$("globalSearch").value=""})}
 function scanList(list,targetId,progressId){const box=$(targetId),progress=$(progressId);if(!box)return;box.innerHTML="";if(progress)progress.textContent=t("analyzingInProgress");(async()=>{const settled=await Promise.allSettled(list.map(item=>analyseItem(item,false,false)));const results=settled.filter(x=>x.status==="fulfilled").map(x=>x.value);results.sort((a,b)=>b.confidence-a.confidence);box.innerHTML=results.length?results.map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}% · ${r.quality}</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join(""):`<div class="item muted">${t("noResults")}</div>`;if(progress)progress.textContent=t("doneAnalyzedSuffix")(results.length)})()}
-function populate(){$("instrumentSelect").innerHTML=allCatalog().map(x=>`<option value="${x.id}">${x.name} · ${x.type}</option>`).join("");$("instrumentSelect").value=state.selected;$("positionInstrument").innerHTML=CATALOG.filter(x=>x.type==="CFD").map(x=>`<option value="${x.id}">${x.name} · ${x.xtb}</option>`).join("");const scalpItems=SCALP_IDS.map(id=>allCatalog().find(x=>x.id===id)).filter(Boolean);$("scalpingInstrument").innerHTML=scalpItems.map(x=>`<option value="${x.id}">${x.xtb||x.symbol} · ${x.name}</option>`).join("");const sectors=[...new Set(CATALOG.map(x=>x.sector))].sort();$("sectorFilter").innerHTML='<option value="">Tous</option>'+sectors.map(x=>`<option>${x}</option>`).join("");$("autoScanToggle").checked=state.prefs.auto;$("autoInterval").value=String(state.prefs.interval);$("notifyThreshold").value=state.prefs.notifyThreshold;if($("hotAlertToggle"))$("hotAlertToggle").checked=state.prefs.hotAlertEnabled!==false;if($("hotAlertThreshold"))$("hotAlertThreshold").value=state.prefs.hotAlertThreshold||90;if($("notifyCooldown"))$("notifyCooldown").value=String(state.prefs.notifyCooldownMinutes||20);if($("minQualityGrade"))$("minQualityGrade").value=state.prefs.minQualityGrade||"C";if($("economyModeToggle"))$("economyModeToggle").checked=!!state.prefs.economyMode;if($("dailyApiCreditInput"))$("dailyApiCreditInput").value=state.prefs.dailyApiCreditEstimate||800;if($("perMinuteApiCreditInput"))$("perMinuteApiCreditInput").value=state.prefs.perMinuteApiCreditEstimate||8;renderApiUsage();renderFavorites();renderStats();renderKeyUi();updateFavoriteButton()}
+function populate(){$("instrumentSelect").innerHTML=allCatalog().map(x=>`<option value="${x.id}">${x.name} · ${x.type}</option>`).join("");$("instrumentSelect").value=state.selected;$("positionInstrument").innerHTML=CATALOG.filter(x=>x.type==="CFD").map(x=>`<option value="${x.id}">${x.name} · ${x.xtb}</option>`).join("");const scalpItems=SCALP_IDS.map(id=>allCatalog().find(x=>x.id===id)).filter(Boolean);$("scalpingInstrument").innerHTML=scalpItems.map(x=>`<option value="${x.id}">${x.xtb||x.symbol} · ${x.name}</option>`).join("");const sectors=[...new Set(CATALOG.map(x=>x.sector))].sort();$("sectorFilter").innerHTML='<option value="">Tous</option>'+sectors.map(x=>`<option>${x}</option>`).join("");$("autoScanToggle").checked=state.prefs.auto;$("autoInterval").value=String(state.prefs.interval);$("notifyThreshold").value=state.prefs.notifyThreshold;if($("tradingProfileSelect"))$("tradingProfileSelect").value=state.prefs.tradingProfile||"";if($("riskAppetiteSelect"))$("riskAppetiteSelect").value=state.prefs.riskAppetite||"";if($("hotAlertToggle"))$("hotAlertToggle").checked=state.prefs.hotAlertEnabled!==false;if($("hotAlertThreshold"))$("hotAlertThreshold").value=state.prefs.hotAlertThreshold||90;if($("notifyCooldown"))$("notifyCooldown").value=String(state.prefs.notifyCooldownMinutes||20);if($("minQualityGrade"))$("minQualityGrade").value=state.prefs.minQualityGrade||"C";if($("economyModeToggle"))$("economyModeToggle").checked=!!state.prefs.economyMode;if($("dailyApiCreditInput"))$("dailyApiCreditInput").value=state.prefs.dailyApiCreditEstimate||800;if($("perMinuteApiCreditInput"))$("perMinuteApiCreditInput").value=state.prefs.perMinuteApiCreditEstimate||8;renderApiUsage();renderFavorites();renderStats();renderKeyUi();updateFavoriteButton()}
 function openPanel(name){
 document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
 document.querySelectorAll(".nav-btn").forEach(x=>x.classList.remove("active"));
@@ -1196,7 +1196,7 @@ if(state.prefs.uiMode)return;
 const dlg=$("uiModeDialog");
 if(dlg&&typeof dlg.showModal==="function")dlg.showModal();
 }
-const OB_TOTAL_STEPS=6;
+const OB_TOTAL_STEPS=7;
 function maybeShowOnboarding(){
 if(state.onboarding&&state.onboarding.completed){ maybeShowUiModeDialog(); return; }
 const dlg=$("onboardingFlow");
@@ -1223,21 +1223,60 @@ if(n===3){
 document.querySelectorAll(".ob-profile-btn").forEach(b=>b.classList.toggle("active",b.dataset.profile===state.prefs.tradingProfile));
 }
 if(n===4){
+document.querySelectorAll(".ob-risk-btn").forEach(b=>b.classList.toggle("active",b.dataset.risk===state.prefs.riskAppetite));
+}
+if(n===5){
 if($("obNotifToggle"))$("obNotifToggle").checked=!!state.onboarding.privacy.notifications;
 if($("obCrashToggle"))$("obCrashToggle").checked=!!state.onboarding.privacy.crashReports;
 if($("obStatsToggle"))$("obStatsToggle").checked=!!state.onboarding.privacy.anonymousStats;
 }
-if(n===5){ if($("obTermsError"))$("obTermsError").style.display="none"; }
+if(n===6){ if($("obTermsError"))$("obTermsError").style.display="none"; }
 }
 function completeOnboarding(){
 state.onboarding.completed=true;
 save();
 const dlg=$("onboardingFlow");
 if(dlg&&typeof dlg.close==="function")dlg.close();
+const PM=window.YukiMessages&&window.YukiMessages.LIVE_MESSAGES;
+if(PM&&window.YukiLive&&state.prefs.tradingProfile){
+const lang=typeof currentLang==="function"?currentLang():"fr";
+const m=(PM[lang]||PM.fr).profileApplied;
+if(typeof m==="function"){
+const horizonLabel=t(state.prefs.preferredHorizon==="4h"?"horizonSwing":state.prefs.preferredHorizon==="1day"?"horizonTrend":"horizonShort");
+try{window.YukiLive.show(m(horizonLabel),{panel:"home",durationMs:10000})}catch{}
+}
+}
+}
+const PROFILE_HORIZON={scalping:"1h",day_trading:"1h",swing:"4h",investment:"1day"};
+const RISK_DEFAULTS={
+prudent:{notifyThreshold:80,minQualityGrade:"B",hotAlertThreshold:92},
+equilibre:{notifyThreshold:75,minQualityGrade:"C",hotAlertThreshold:90},
+dynamique:{notifyThreshold:70,minQualityGrade:"C",hotAlertThreshold:88}
+};
+function applyProfilePersonalization(){
+const h=PROFILE_HORIZON[state.prefs.tradingProfile];
+if(!h)return;
+state.prefs.preferredHorizon=h;
+applyPreferredHorizon();
+}
+function applyPreferredHorizon(){
+const h=state.prefs.preferredHorizon;
+if(!h)return;
+currentHorizon=h;
+document.querySelectorAll(".horizon").forEach(b=>b.classList.toggle("active",b.dataset.horizon===h));
+}
+function applyRiskDefaults(risk){
+const d=RISK_DEFAULTS[risk];
+if(!d)return;
+state.prefs.notifyThreshold=d.notifyThreshold;
+state.prefs.minQualityGrade=d.minQualityGrade;
+state.prefs.hotAlertThreshold=d.hotAlertThreshold;
+if(typeof populate==="function"&&__yukiInitialized)try{populate()}catch{}
 }
 function initApp(){
 state=load();
 if(window.YUKI_DEMO_MODE)state.apiKey=state.apiKey||"DEMO";
+try{applyPreferredHorizon()}catch{}
 if(window.YukiApiOptimizer)window.YukiApiOptimizer.configure(state,save);
 applyUiMode(state.prefs.uiMode||"expert",false);
 if(__yukiInitialized){ populate();renderCustomCatalog();renderDeclaredPositionBadge();renderScalpPosition();renderFavorites();renderStats();renderJournal();renderPortfolio();refreshPositions();startAuto();startScalpingLoop();return; }
@@ -1254,7 +1293,10 @@ btn.onclick=()=>{ const cur=+btn.closest(".ob-step").dataset.obStep; goToObStep(
 if($("obModeSimpleBtn"))$("obModeSimpleBtn").onclick=()=>{ applyUiMode("simple",true); goToObStep(3); };
 if($("obModeExpertBtn"))$("obModeExpertBtn").onclick=()=>{ applyUiMode("expert",true); goToObStep(3); };
 document.querySelectorAll(".ob-profile-btn").forEach(btn=>{
-btn.onclick=()=>{ state.prefs.tradingProfile=btn.dataset.profile; save(); goToObStep(4); };
+btn.onclick=()=>{ state.prefs.tradingProfile=btn.dataset.profile; applyProfilePersonalization(); save(); goToObStep(4); };
+});
+document.querySelectorAll(".ob-risk-btn").forEach(btn=>{
+btn.onclick=()=>{ state.prefs.riskAppetite=btn.dataset.risk; applyRiskDefaults(btn.dataset.risk); save(); goToObStep(5); };
 });
 if($("obAcceptBtn"))$("obAcceptBtn").onclick=()=>{
 const termsOk=$("obTermsCheckbox").checked, privacyOk=$("obPrivacyCheckbox").checked;
@@ -1264,7 +1306,7 @@ if(state.onboarding.privacy.notifications&&typeof Notification!=="undefined"&&No
 Notification.requestPermission().catch(()=>{});
 }
 save();
-goToObStep(6);
+goToObStep(7);
 };
 if($("obFinishBtn"))$("obFinishBtn").onclick=completeOnboarding;
 if($("obNotifToggle"))$("obNotifToggle").onchange=()=>{ state.onboarding.privacy.notifications=$("obNotifToggle").checked; save(); };
@@ -1347,6 +1389,8 @@ if($("adminRefreshBtn"))$("adminRefreshBtn").onclick=renderAdmin;
 refreshHomeOpportunities().catch(()=>{});
 try{updateCheckinStreak();renderCheckinBadge();renderWeeklyRecap()}catch{}
 if($("shareWeekJournalBtn"))$("shareWeekJournalBtn").onclick=()=>shareWeeklyCard();
+if($("tradingProfileSelect"))$("tradingProfileSelect").onchange=e=>{state.prefs.tradingProfile=e.target.value||null;applyProfilePersonalization();save()};
+if($("riskAppetiteSelect"))$("riskAppetiteSelect").onchange=e=>{const v=e.target.value||null;state.prefs.riskAppetite=v;if(v)applyRiskDefaults(v);save()};
 if($("etfCount"))$("etfCount").textContent=CATALOG.filter(x=>x.type==="ETF").length;
 if(typeof currentUser==="function"){
 renderAccountSettings();
