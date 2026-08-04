@@ -217,3 +217,21 @@
 }
 .yuki-live-hidden{opacity:0;transform:translateY(12px);pointer-events:none}
 @media(min-width:700px){.yuki-live-bubble{left:auto;right:20px;max-width:400px}}
+
+/* ---- Check-in quotidien & récap hebdo ---- */
+.checkin-badge{
+  display:inline-block;margin:6px 0 2px;padding:4px 10px;
+  background:#0f2f21;border:1px solid #1d5c40;border-radius:999px;
+  font-size:.8rem;color:#7ee2b0;
+}
+.weekly-recap{
+  position:relative;margin:8px 0;padding:12px 34px 12px 12px;
+  background:#101a2e;border:1px solid #24365c;border-radius:12px;
+}
+.weekly-recap strong{color:#c7d6f5;font-size:.95rem}
+.weekly-recap p{margin:6px 0 0;font-size:.88rem;line-height:1.45;color:#aebdda}
+.weekly-recap-close{
+  position:absolute;top:6px;right:8px;background:none;border:none;
+  color:#7d8db0;font-size:1rem;cursor:pointer;padding:4px;
+}
+.checkin-badge.hidden-card,.weekly-recap.hidden-card{display:none}

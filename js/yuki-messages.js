@@ -314,6 +314,54 @@ const MORNING_BRIEF = {
   }
 };
 
+/* ---- Check-ins quotidiens & Récap hebdo -----------------------------------
+   Fidélisation SAINE (voir cahier des charges V4.3.1) : on récompense la
+   DISCIPLINE (consulter son brief, tenir son journal), jamais le volume de
+   trades ni la prise de risque. Aucune urgence artificielle, aucun compte à
+   rebours, aucune récompense aléatoire. Textes descriptifs, validés par
+   isSafeMessage avant affichage. */
+const CHECKIN_MESSAGES = {
+  fr: {
+    badge: n => `📆 ${n} jour${n > 1 ? "s" : ""} de suite`,
+    badgeBest: best => `record ${best}`,
+    milestone3: "3 jours de suite à consulter ton brief — la régularité est la base d'une bonne discipline d'analyse.",
+    milestone7: "Une semaine complète de check-ins ! Consulter le marché avant d'agir, c'est exactement la bonne habitude.",
+    milestone14: "14 jours de suite. Ta routine d'analyse est installée — c'est elle qui fait la différence sur la durée.",
+    milestone30: "30 jours de check-ins. Peu de gens tiennent une discipline pareille — bravo pour la constance.",
+    streakLost: prev => `Nouvelle série entamée (la précédente : ${prev} jour${prev > 1 ? "s" : ""}). Ce qui compte, c'est de revenir — pas de ne jamais rater.`
+  },
+  en: {
+    badge: n => `📆 ${n} day${n > 1 ? "s" : ""} in a row`,
+    badgeBest: best => `best ${best}`,
+    milestone3: "3 days in a row checking your brief — consistency is the foundation of good analysis discipline.",
+    milestone7: "A full week of check-ins! Reviewing the market before acting is exactly the right habit.",
+    milestone14: "14 days in a row. Your analysis routine is set — that's what makes the difference over time.",
+    milestone30: "30 days of check-ins. Few people keep up such discipline — congrats on the consistency.",
+    streakLost: prev => `New streak started (previous one: ${prev} day${prev > 1 ? "s" : ""}). What matters is coming back — not never missing.`
+  }
+};
+
+const WEEKLY_RECAP = {
+  fr: {
+    title: "📊 Ta semaine en 30 secondes",
+    signals: n => n > 0 ? `${n} signal${n > 1 ? "aux" : ""} enregistré${n > 1 ? "s" : ""} cette semaine.` : "Aucun signal enregistré cette semaine.",
+    accuracy: (wins, total) => `Sur les signaux évalués : ${wins} gagnant${wins > 1 ? "s" : ""} sur ${total} (${Math.round(wins / total * 100)}%).`,
+    noneEvaluated: "Aucun signal évalué pour l'instant — les évaluations arrivent avec le temps.",
+    bestInstrument: name => `Instrument le plus analysé : ${name}.`,
+    checkins: n => `${n} jour${n > 1 ? "s" : ""} de check-in cette semaine.`,
+    closing: "Les statistiques décrivent le passé, elles ne garantissent rien pour la suite. Bonne semaine !"
+  },
+  en: {
+    title: "📊 Your week in 30 seconds",
+    signals: n => n > 0 ? `${n} signal${n > 1 ? "s" : ""} recorded this week.` : "No signals recorded this week.",
+    accuracy: (wins, total) => `Among evaluated signals: ${wins} winner${wins > 1 ? "s" : ""} out of ${total} (${Math.round(wins / total * 100)}%).`,
+    noneEvaluated: "No evaluated signals yet — evaluations come with time.",
+    bestInstrument: name => `Most analyzed instrument: ${name}.`,
+    checkins: n => `${n} check-in day${n > 1 ? "s" : ""} this week.`,
+    closing: "Statistics describe the past; they guarantee nothing about what's next. Have a good week!"
+  }
+};
+
 const EXPLAIN_TEMPLATES = {
   fr: {
     simpleIntro: "Voici ce que je peux t'expliquer simplement :",
@@ -331,13 +379,13 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     YUKI_IDENTITY_STATEMENT, ALLOWED_PHRASES, FORBIDDEN_PATTERNS,
     normalizeForGuard, findForbiddenPhrase, isSafeMessage, normLang,
-    MESSAGES, getMessage, maskSecret, EXPLAIN_TEMPLATES, LIVE_MESSAGES, MORNING_BRIEF
+    MESSAGES, getMessage, maskSecret, EXPLAIN_TEMPLATES, LIVE_MESSAGES, MORNING_BRIEF, CHECKIN_MESSAGES, WEEKLY_RECAP
   };
 }
 if (typeof window !== "undefined") {
   window.YukiMessages = {
     YUKI_IDENTITY_STATEMENT, ALLOWED_PHRASES, FORBIDDEN_PATTERNS,
     normalizeForGuard, findForbiddenPhrase, isSafeMessage, normLang,
-    MESSAGES, getMessage, maskSecret, EXPLAIN_TEMPLATES, LIVE_MESSAGES, MORNING_BRIEF
+    MESSAGES, getMessage, maskSecret, EXPLAIN_TEMPLATES, LIVE_MESSAGES, MORNING_BRIEF, CHECKIN_MESSAGES, WEEKLY_RECAP
   };
 }
