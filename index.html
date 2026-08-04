@@ -24,6 +24,7 @@
       <button data-auth-goto="login" class="auth-tab-btn" data-i18n="login">Connexion</button>
       <button data-auth-goto="signup" class="auth-tab-btn" data-i18n="signup">Créer un compte</button>
     </div>
+    <button id="tryDemoBtn" type="button" class="full demo-btn" data-i18n="tryDemoBtn">🚀 Essayer sans compte, avec des données d'exemple</button>
 
     <form id="authMode-login" class="auth-mode active">
       <label><span data-i18n="email">E-mail</span><input id="loginEmail" type="email" required autocomplete="username"></label>
@@ -67,6 +68,10 @@
 <section id="home" class="panel active">
 <div class="card">
 <div class="item-head"><h2 data-i18n="dashboardTitle">Tableau de bord</h2><button id="refreshOpportunitiesBtn" data-i18n="refresh">Actualiser</button></div>
+<div id="demoBanner" class="demo-banner hidden-card">
+  <span data-i18n="demoBannerText">🧪 Mode démo — données d'exemple, pas le marché réel. Tes analyses fonctionnent, les prix sont fictifs.</span>
+  <button id="demoExitBtn" class="primary" data-i18n="demoExitBtn">Créer mon compte</button>
+</div>
 <div id="yukiHomeBanner" class="yuki-home-banner" role="button" tabindex="0" aria-label="Ouvrir l'assistant Yuki">
   <span class="yuki-avatar-badge yuki-avatar-badge-sm"><img src="assets/images/yuki/yuki-avatar-64.png?v=20260719d" alt=""></span>
   <span data-i18n="yukiHomeBannerText">Besoin d'aide pour comprendre l'application ? Demande à Yuki.</span>
@@ -585,6 +590,7 @@
 <script src="sync-client.js"></script>
 <script src="push-client.js"></script>
 <script src="api-cache.js"></script>
+<script src="js/demo-data.js"></script>
 <script src="analysis.js"></script>
 <script src="app.js"></script>
 <script src="js/yuki-messages.js"></script>

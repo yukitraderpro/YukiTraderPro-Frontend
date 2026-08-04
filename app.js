@@ -156,6 +156,10 @@ function analyseSeries(values,weights){
  return{signal,confidence,price,atr:a,reasons,stop,target,rr,quality:quality(confidence,rr,conf.strongTrend),regime:regime(vol,trend),marketRegime:mr,score,vol,trend,strongTrend:conf.strongTrend,risk:riskLevel(vol,rr,conf.falseSignalRisk),votes:conf.votes,scenarios,insufficientData,dataCompleteness:conf.dataCompleteness}
 }
 async function fetchSeries(item,interval=currentHorizon){
+ /* Mode démo (« aha moment ») : les séries viennent de js/demo-data.js par
+    ce même chemin — le moteur d'analyse reçoit exactement le même format
+    et calcule normalement. Aucune clé API requise, aucun appel réseau. */
+ if(window.YUKI_DEMO_MODE&&window.YukiDemoData)return window.YukiDemoData.getSeries(item.symbol,interval);
  if(!state.apiKey)throw new Error(t("apiKeyMissingOpenSettings"));
  const doFetch=async()=>{
   const p=new URLSearchParams({symbol:item.symbol,interval,outputsize:"160",apikey:state.apiKey,format:"JSON"});if(item.exchange)p.set("exchange",item.exchange);
@@ -1452,6 +1456,7 @@ function completeOnboarding(){
 
 function initApp(){
 state=load();
+if(window.YUKI_DEMO_MODE)state.apiKey=state.apiKey||"DEMO";
 if(window.YukiApiOptimizer)window.YukiApiOptimizer.configure(state,save);
 applyUiMode(state.prefs.uiMode||"expert",false);
 if(__yukiInitialized){ populate();renderCustomCatalog();renderDeclaredPositionBadge();renderScalpPosition();renderFavorites();renderStats();renderJournal();renderPortfolio();refreshPositions();startAuto();startScalpingLoop();return; }
@@ -1784,6 +1789,30 @@ if("serviceWorker"in navigator)navigator.serviceWorker.register("service-worker.
 populate();renderCustomCatalog();renderDeclaredPositionBadge();renderScalpPosition();renderJournal();renderPortfolio();refreshPositions();if(state.apiKey)testApi();else setStatus(false,t("apiKeyMissing"));startAuto();startScalpingLoop();
 }
 window.initApp = initApp;
+
+/* ---- Mode démo : découvrir l'app avec des données d'exemple ------------
+   Accessible depuis l'écran de connexion SANS compte ni clé API. État
+   stocké sous une clé dédiée (yuki_pro_state_v1_demo…) : n'interfère
+   jamais avec un vrai compte. Le bandeau #demoBanner reste visible en
+   permanence, avec la sortie vers la création de compte. */
+window.enterDemoMode=function(){
+  window.YUKI_DEMO_MODE=true;
+  window.YUKI_ACTIVE_EMAIL="demo@exemple.local";
+  const authScreen=document.getElementById("authScreen");
+  if(authScreen)authScreen.classList.add("hidden-card");
+  const app=document.querySelector(".app");
+  if(app)app.classList.remove("hidden-card");
+  if(typeof applyI18n==="function")applyI18n();
+  initApp();
+  const banner=$("demoBanner");
+  if(banner){
+    banner.classList.remove("hidden-card");
+    const exitBtn=$("demoExitBtn");
+    if(exitBtn)exitBtn.onclick=()=>{location.reload()};
+  }
+  refreshHomeOpportunities().catch(()=>{});
+  try{updateCheckinStreak();renderCheckinBadge()}catch{}
+};
 
 /* ==========================================================================
    Rafraîchissement instantané de tout le contenu dynamique lors d'un

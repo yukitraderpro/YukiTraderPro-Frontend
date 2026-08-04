@@ -424,6 +424,9 @@ const I18N = {
     minQualityLabel:"Qualité minimale pour être notifié",
     qualityDAndUp:"D et plus (tout signal)", qualityCAndUp:"C et plus", qualityBAndUp:"B et plus", qualityAOnly:"A et A+ uniquement", qualityAPlusOnly:"A+ uniquement",
     antiSpamLabel:"Anti-spam : délai minimal avant une nouvelle alerte identique",
+    tryDemoBtn:"🚀 Essayer sans compte, avec des données d'exemple",
+    demoBannerText:"🧪 Mode démo — données d'exemple, pas le marché réel. Tes analyses fonctionnent, les prix sont fictifs.",
+    demoExitBtn:"Créer mon compte",
     hotAlertTitle:"Opportunité exceptionnelle",
     hotAlertLabel:"🔥 Alerte « opportunité exceptionnelle » : notification immédiate dès qu'un instrument surveillé atteint le seuil ci-dessous (ignore le filtre de qualité)",
     hotAlertThresholdLabel:"Seuil opportunité exceptionnelle (%)",
@@ -1014,6 +1017,9 @@ const I18N = {
     minQualityLabel:"Minimum quality to be notified",
     qualityDAndUp:"D and up (any signal)", qualityCAndUp:"C and up", qualityBAndUp:"B and up", qualityAOnly:"A and A+ only", qualityAPlusOnly:"A+ only",
     antiSpamLabel:"Anti-spam: minimum delay before an identical new alert",
+    tryDemoBtn:"🚀 Try it without an account, with sample data",
+    demoBannerText:"🧪 Demo mode — sample data, not the real market. Your analyses work; prices are fictional.",
+    demoExitBtn:"Create my account",
     hotAlertTitle:"Exceptional opportunity",
     hotAlertLabel:"🔥 \"Exceptional opportunity\" alert: instant notification when any watched instrument reaches the threshold below (bypasses the quality filter)",
     hotAlertThresholdLabel:"Exceptional opportunity threshold (%)",
@@ -1415,6 +1421,8 @@ function showAuthMode(mode){
 }
 
 function wireAuthScreen(){
+  const demoBtn=document.getElementById("tryDemoBtn");
+  if(demoBtn)demoBtn.onclick=()=>{ if(typeof window.enterDemoMode==="function")window.enterDemoMode(); };
   document.querySelectorAll("[data-auth-goto]").forEach(b=>{
     b.onclick = ()=>showAuthMode(b.dataset.authGoto);
   });
