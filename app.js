@@ -1033,6 +1033,96 @@ function opportunityPool(){
   const ids=new Set([...(state.favorites||[]),...SCALP_IDS.slice(0,12)]);
   return [...ids].map(id=>allCatalog().find(x=>x.id===id)).filter(Boolean).slice(0,18);
 }
+/* ==========================================================================
+   Fidélisation saine (V4.3.1) : check-ins quotidiens + récap hebdomadaire.
+   Principes (voir cahier des charges) : on récompense la DISCIPLINE
+   (consulter son brief chaque jour), jamais le volume de trades. Aucune
+   urgence artificielle, aucune récompense aléatoire, aucun compte à rebours.
+   Tout est calculé localement à partir de state — zéro appel API.
+   ========================================================================== */
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function updateCheckinStreak(){
+  const today=todayKey();
+  state.checkin=state.checkin||{lastDate:null,streak:0,best:0,days:[]};
+  const c=state.checkin;
+  if(c.lastDate===today)return; // déjà compté aujourd'hui
+  const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  const prevStreak=c.streak;
+  c.streak=(c.lastDate===yesterday)?c.streak+1:1;
+  c.lastDate=today;
+  c.best=Math.max(c.best||0,c.streak);
+  c.days=(c.days||[]).filter(d=>Date.now()-new Date(d).getTime()<8*86400000);
+  c.days.push(today);
+  save();
+  renderCheckinBadge();
+  /* Célébration aux jalons uniquement (3/7/14/30) — pas à chaque jour, pour
+     rester un encouragement et non un réflexe de dopamine. Si la série
+     vient d'être perdue, message bienveillant : revenir compte plus que ne
+     jamais rater (jamais de culpabilisation). */
+  const CM=window.YukiMessages&&window.YukiMessages.CHECKIN_MESSAGES;
+  if(!CM||!window.YukiLive)return;
+  const lang=typeof currentLang==="function"?currentLang():"fr";
+  const m=CM[lang]||CM.fr;
+  let text=null;
+  if(c.streak===3)text=m.milestone3;
+  else if(c.streak===7)text=m.milestone7;
+  else if(c.streak===14)text=m.milestone14;
+  else if(c.streak===30)text=m.milestone30;
+  else if(c.streak===1&&prevStreak>=3)text=m.streakLost(prevStreak);
+  if(text)try{window.YukiLive.show(text,{panel:"home",durationMs:11000})}catch{}
+}
+function renderCheckinBadge(){
+  const el=$("checkinBadge");
+  const CM=window.YukiMessages&&window.YukiMessages.CHECKIN_MESSAGES;
+  if(!el||!CM)return;
+  const c=state.checkin;
+  if(!c||!c.streak){el.classList.add("hidden-card");return}
+  const lang=typeof currentLang==="function"?currentLang():"fr";
+  const m=CM[lang]||CM.fr;
+  el.textContent=m.badge(c.streak)+(c.best>c.streak?` · ${m.badgeBest(c.best)}`:"");
+  el.classList.remove("hidden-card");
+}
+/* Récap hebdo : affiché le dimanche (ou à la première ouverture suivante),
+   une seule fois par semaine, construit uniquement depuis state.signals et
+   state.checkin. Si la semaine est vide, on n'affiche rien plutôt qu'une
+   carte creuse. */
+function isoWeekKey(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()+3-((x.getDay()+6)%7));const w1=new Date(x.getFullYear(),0,4);return x.getFullYear()+"-W"+String(1+Math.round(((x-w1)/86400000-3+((w1.getDay()+6)%7))/7)).padStart(2,"0")}
+function renderWeeklyRecap(){
+  const box=$("weeklyRecapBox");
+  const WR=window.YukiMessages&&window.YukiMessages.WEEKLY_RECAP;
+  const safeCheck=window.YukiMessages&&window.YukiMessages.isSafeMessage;
+  if(!box||!WR||!safeCheck)return;
+  const now=new Date();
+  if(now.getDay()!==0&&now.getDay()!==1)return; // fenêtre : dimanche + lundi (rattrapage)
+  const weekKey=isoWeekKey(now);
+  if(state.lastWeeklyRecapKey===weekKey)return;
+  const weekAgo=Date.now()-7*86400000;
+  const weekSignals=(state.signals||[]).filter(s=>s.timestamp&&s.timestamp>=weekAgo);
+  if(!weekSignals.length)return; // semaine vide : silence plutôt qu'une carte creuse
+  const lang=typeof currentLang==="function"?currentLang():"fr";
+  const m=WR[lang]||WR.fr;
+  const evaluated=weekSignals.filter(s=>s.evaluated&&(s.outcome==="gagnant"||s.outcome==="perdant"));
+  const wins=evaluated.filter(s=>s.outcome==="gagnant").length;
+  const counts={};for(const s of weekSignals)counts[s.name]=(counts[s.name]||0)+1;
+  const bestName=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+  const checkinDays=((state.checkin&&state.checkin.days)||[]).filter(d=>new Date(d).getTime()>=weekAgo).length;
+  const lines=[m.signals(weekSignals.length)];
+  lines.push(evaluated.length?m.accuracy(wins,evaluated.length):m.noneEvaluated);
+  lines.push(m.bestInstrument(bestName));
+  if(checkinDays>1)lines.push(m.checkins(checkinDays));
+  lines.push(m.closing);
+  const text=lines.join(" ");
+  if(!safeCheck(text))return;
+  state.lastWeeklyRecapKey=weekKey;save();
+  box.innerHTML="";
+  const title=document.createElement("strong");title.textContent=m.title;
+  const p=document.createElement("p");p.textContent=text;
+  const close=document.createElement("button");close.textContent="✕";close.className="weekly-recap-close";close.setAttribute("aria-label","Fermer");
+  close.onclick=()=>box.classList.add("hidden-card");
+  box.append(title,close,p);
+  box.classList.remove("hidden-card");
+}
+
 async function refreshHomeOpportunities(){
   const box=$("homeOpportunityBox"),top5box=$("homeTop5Box"),marketBox=$("marketStateBox"),scoreBox=$("aiScoreBox"),alertsBox=$("homeAlertsBox");
   if(!box||!top5box)return;
@@ -1503,6 +1593,7 @@ document.querySelectorAll("[data-market-class]").forEach(b=>b.onclick=()=>scanMa
 if($("etfScanBtn"))$("etfScanBtn").onclick=()=>{const list=CATALOG.filter(x=>x.type==="ETF").slice(0,+($("etfScanCount")?.value||40));scanList(list,"etfRanking","etfScanProgress")};
 if($("adminRefreshBtn"))$("adminRefreshBtn").onclick=renderAdmin;
 refreshHomeOpportunities().catch(()=>{});
+try{updateCheckinStreak();renderCheckinBadge();renderWeeklyRecap()}catch{}
 if($("etfCount"))$("etfCount").textContent=CATALOG.filter(x=>x.type==="ETF").length;
 if(typeof currentUser==="function"){
   renderAccountSettings();
