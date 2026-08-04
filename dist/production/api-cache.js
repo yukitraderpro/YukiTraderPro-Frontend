@@ -158,6 +158,35 @@ return { lastMinute, today, dailyLimit, perMinuteLimit, ratio: Math.min(1, today
 }
 function isEconomyMode() { return !!(stateRef && stateRef.prefs && stateRef.prefs.economyMode); }
 function cacheKey(symbol, interval, exchange) { return `${symbol}|${interval}|${exchange || ""}`; }
+const PERSIST_KEY = "yuki_pro_api_cache_v1";
+const PERSIST_MAX_ENTRIES = 40;
+const PERSIST_MAX_AGE_MS = 24 * 3600 * 1000;
+let persistTimer = null;
+function loadPersistedCache() {
+if (typeof localStorage === "undefined") return;
+try {
+const raw = localStorage.getItem(PERSIST_KEY);
+if (!raw) return;
+const obj = JSON.parse(raw);
+const now = Date.now();
+for (const [key, entry] of Object.entries(obj)) {
+if (!entry || !entry.cachedAt || now - entry.cachedAt > PERSIST_MAX_AGE_MS) continue;
+if (!cacheStore.has(key)) cacheStore.set(key, entry);
+}
+} catch {  try { localStorage.removeItem(PERSIST_KEY); } catch {} }
+}
+function schedulePersist() {
+if (typeof localStorage === "undefined") return;
+clearTimeout(persistTimer);
+persistTimer = setTimeout(() => {
+try {
+const entries = [...cacheStore.entries()]
+.sort((a, b) => (b[1].cachedAt || 0) - (a[1].cachedAt || 0))
+.slice(0, PERSIST_MAX_ENTRIES);
+localStorage.setItem(PERSIST_KEY, JSON.stringify(Object.fromEntries(entries)));
+} catch {  }
+}, 300);
+}
 function getCached(key) {
 const entry = cacheStore.get(key);
 if (!entry) return null;
@@ -171,8 +200,13 @@ return entry ? entry.data : null;
 function setCached(key, data, interval) {
 const ttl = computeCacheTtlMs(interval, isEconomyMode());
 cacheStore.set(key, { data, expiresAt: Date.now() + ttl, cachedAt: Date.now() });
+schedulePersist();
 }
-function clearCache() { cacheStore.clear(); }
+function clearCache() {
+cacheStore.clear();
+if (typeof localStorage !== "undefined") { try { localStorage.removeItem(PERSIST_KEY); } catch {} }
+}
+loadPersistedCache();
 function runQueue() {
 while (queueRunning < MAX_CONCURRENT && queue.length) {
 const now = Date.now();
@@ -221,7 +255,7 @@ configure, cachedFetch, clearCache, getCreditStats, isEconomyMode,
 computeCacheTtlMs, adaptivePollMultiplier, friendlyApiError,
 classifyError, nextBackoffDelayMs, classifyPositionStatus, POSITION_STATUS_LABELS,
 POSITION_NORMAL_RHYTHM_MS, getStaleCached,
-_internal: { cacheStore, queue }
+_internal: { cacheStore, queue, getCached, setCached, getStaleCached, clearCache }
 };
 })(typeof window !== "undefined" ? window : globalThis);
 if (typeof module !== "undefined" && module.exports) {

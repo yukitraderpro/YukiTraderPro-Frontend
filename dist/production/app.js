@@ -62,7 +62,14 @@ merged.onboarding={...base.onboarding,...(saved.onboarding||{})};
 merged.onboarding.privacy={...base.onboarding.privacy,...((saved.onboarding||{}).privacy||{})};
 return merged;
 }
-function save(){try{localStorage.setItem(currentStateKey(),JSON.stringify(state))}catch{}if(window.YukiSync&&window.YukiSync.schedulePush)window.YukiSync.schedulePush()}
+let saveTimer=null;
+function flushSave(){clearTimeout(saveTimer);saveTimer=null;try{localStorage.setItem(currentStateKey(),JSON.stringify(state))}catch{}}
+function save(){
+if(!saveTimer)saveTimer=setTimeout(flushSave,250);
+if(window.YukiSync&&window.YukiSync.schedulePush)window.YukiSync.schedulePush()
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushSave()});
+window.addEventListener("pagehide",flushSave);
 function allCatalog(){return [...CATALOG,...(state.custom||[])]}
 function current(){return allCatalog().find(x=>x.id===state.selected)||CATALOG[0]}
 function money(v){return Number.isFinite(v)?new Intl.NumberFormat("fr-FR",{maximumFractionDigits:v<10?5:2}).format(v):"—"}
@@ -1246,7 +1253,7 @@ alert(feMsg(e));
 }
 }
 if($("subscribeBtn"))$("subscribeBtn").onclick=launchSubscriptionFlow;
-if($("logoutBtn"))$("logoutBtn").onclick=async()=>{if(confirm(t("msgConfirmLogout"))){await logOut();location.reload()}};
+if($("logoutBtn"))$("logoutBtn").onclick=async()=>{if(confirm(t("msgConfirmLogout"))){flushSave();await logOut();location.reload()}};
 document.querySelectorAll("[data-market-class]").forEach(b=>b.onclick=()=>scanMarketClass(b.dataset.marketClass,"marketRanking","marketScanProgress",+( $("marketScanCount")?.value||25)));
 if($("etfScanBtn"))$("etfScanBtn").onclick=()=>{const list=CATALOG.filter(x=>x.type==="ETF").slice(0,+($("etfScanCount")?.value||40));scanList(list,"etfRanking","etfScanProgress")};
 if($("adminRefreshBtn"))$("adminRefreshBtn").onclick=renderAdmin;
