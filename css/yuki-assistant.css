@@ -235,3 +235,18 @@
   color:#7d8db0;font-size:1rem;cursor:pointer;padding:4px;
 }
 .checkin-badge.hidden-card,.weekly-recap.hidden-card{display:none}
+
+/* ---- Mode démo ---- */
+.demo-btn{
+  margin-top:10px;background:#12263f;border:1px dashed #3b82f6;border-radius:10px;
+  color:#93c5fd;padding:11px;font-size:.92rem;cursor:pointer;
+}
+.demo-btn:hover{background:#16304f}
+.demo-banner{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:0 0 10px;padding:10px 12px;
+  background:#2b2410;border:1px solid #7a6420;border-radius:12px;
+  font-size:.87rem;color:#ffd47a;
+}
+.demo-banner button{margin-left:auto;padding:7px 12px;font-size:.85rem}
+.demo-banner.hidden-card{display:none}

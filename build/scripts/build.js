@@ -27,6 +27,7 @@ const JS_FILES = [
   'api-cache.js',
   'analysis.js',
   'app.js',
+  'js/demo-data.js',
   'js/yuki-messages.js',
   'js/yuki-live.js',
   'js/yuki-knowledge.js',

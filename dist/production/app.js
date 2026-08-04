@@ -122,6 +122,7 @@ if(insufficientData){signal="ATTENDRE";reasons.push("Confiance insuffisante — 
 return{signal,confidence,price,atr:a,reasons,stop,target,rr,quality:quality(confidence,rr,conf.strongTrend),regime:regime(vol,trend),marketRegime:mr,score,vol,trend,strongTrend:conf.strongTrend,risk:riskLevel(vol,rr,conf.falseSignalRisk),votes:conf.votes,scenarios,insufficientData,dataCompleteness:conf.dataCompleteness}
 }
 async function fetchSeries(item,interval=currentHorizon){
+if(window.YUKI_DEMO_MODE&&window.YukiDemoData)return window.YukiDemoData.getSeries(item.symbol,interval);
 if(!state.apiKey)throw new Error(t("apiKeyMissingOpenSettings"));
 const doFetch=async()=>{
 const p=new URLSearchParams({symbol:item.symbol,interval,outputsize:"160",apikey:state.apiKey,format:"JSON"});if(item.exchange)p.set("exchange",item.exchange);
@@ -1225,6 +1226,7 @@ if(dlg&&typeof dlg.close==="function")dlg.close();
 }
 function initApp(){
 state=load();
+if(window.YUKI_DEMO_MODE)state.apiKey=state.apiKey||"DEMO";
 if(window.YukiApiOptimizer)window.YukiApiOptimizer.configure(state,save);
 applyUiMode(state.prefs.uiMode||"expert",false);
 if(__yukiInitialized){ populate();renderCustomCatalog();renderDeclaredPositionBadge();renderScalpPosition();renderFavorites();renderStats();renderJournal();renderPortfolio();refreshPositions();startAuto();startScalpingLoop();return; }
@@ -1498,6 +1500,24 @@ if("serviceWorker"in navigator)navigator.serviceWorker.register("service-worker.
 populate();renderCustomCatalog();renderDeclaredPositionBadge();renderScalpPosition();renderJournal();renderPortfolio();refreshPositions();if(state.apiKey)testApi();else setStatus(false,t("apiKeyMissing"));startAuto();startScalpingLoop();
 }
 window.initApp = initApp;
+window.enterDemoMode=function(){
+window.YUKI_DEMO_MODE=true;
+window.YUKI_ACTIVE_EMAIL="demo@exemple.local";
+const authScreen=document.getElementById("authScreen");
+if(authScreen)authScreen.classList.add("hidden-card");
+const app=document.querySelector(".app");
+if(app)app.classList.remove("hidden-card");
+if(typeof applyI18n==="function")applyI18n();
+initApp();
+const banner=$("demoBanner");
+if(banner){
+banner.classList.remove("hidden-card");
+const exitBtn=$("demoExitBtn");
+if(exitBtn)exitBtn.onclick=()=>{location.reload()};
+}
+refreshHomeOpportunities().catch(()=>{});
+try{updateCheckinStreak();renderCheckinBadge()}catch{}
+};
 window.refreshDynamicI18n = function(){
 if(!state || !__yukiInitialized) return;
 try{ renderDeclaredPositionBadge(); }catch{}
