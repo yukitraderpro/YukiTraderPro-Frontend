@@ -43,10 +43,21 @@ function looksLikeStorageKeyName(varName, value) {
   return isKeyNameVar && isSlugValue;
 }
 
+/* Exception ciblée et documentée : la « Google API key » d'une configuration
+   Firebase WEB (apiKey/appId/messagingSenderId) est PUBLIQUE par conception —
+   elle identifie le projet auprès de Google et est visible par tout visiteur
+   du site ; elle n'autorise aucune action privilégiée. Le vrai secret FCM est
+   la clé privée du compte de service, qui vit uniquement dans les variables
+   d'environnement du serveur (Render) et n'est jamais dans ce dépôt.
+   L'exception est limitée à CES DEUX FICHIERS et à CETTE SEULE règle : toute
+   clé Google apparaissant ailleurs reste signalée comme critique. */
+const FIREBASE_PUBLIC_CONFIG_FILES = new Set(['config.js', 'firebase-messaging-sw.js']);
+
 function scanFile(filePath, relPath, findings) {
   const content = fs.readFileSync(filePath, 'utf8');
 
   for (const { name, re } of PATTERNS) {
+    if (name === 'Google API key' && FIREBASE_PUBLIC_CONFIG_FILES.has(path.basename(relPath))) continue;
     const matches = content.match(re);
     if (matches) {
       findings.push({

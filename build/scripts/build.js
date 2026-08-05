@@ -42,6 +42,8 @@ const JSON_FILES = ['manifest.json'];
 // quelles (pas de "minification" possible/utile sur ces formats ici).
 const STATIC_ASSETS = [
   '_headers',
+  'firebase-messaging-sw.js', // récepteur FCM app fermée : copié tel quel, doit rester à la racine sous ce nom exact
+
   'icon.svg',
   'icon-192.png',
   'icon-512.png',
