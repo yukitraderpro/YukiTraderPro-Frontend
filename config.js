@@ -12,5 +12,10 @@
    les valeurs ci-dessous avant tout déploiement.
    ========================================================================== */
 window.YUKI_API_BASE = "https://yukitraderpro-backend-v2.onrender.com"; // déploiement Render cross-origin (2 services) : origine du backend SANS "/api" final — auth.js/sync-client.js ajoutent déjà "/api/..." dans chaque appel (apiBase() + "/api/auth/register", etc.). Ne PAS ajouter "/api" ici sous peine d'appeler .../api/api/auth/register (404 "Route introuvable.").
-window.YUKI_FIREBASE_CONFIG = null;        // ex. { apiKey:"...", projectId:"...", messagingSenderId:"...", appId:"..." }
-window.YUKI_VAPID_PUBLIC_KEY = "";         // clé publique VAPID du projet Firebase (Cloud Messaging > Certificats web push)
+window.YUKI_FIREBASE_CONFIG = {            // projet Firebase « yuki-trader-pro » (valeurs publiques par conception)
+  apiKey: "AIzaSyDX2nOI3d7I2uEp_pKbutGYfw1Q8QZaLoA",   // ⚠️ à vérifier caractère par caractère avec la console Firebase (relevé sur photo)
+  projectId: "yuki-trader-pro",
+  messagingSenderId: "210158942910",
+  appId: "1:210158942910:web:79eee08d4a4568429dbcef"
+};
+window.YUKI_VAPID_PUBLIC_KEY = "BGJEnNE7GiEVL2znMmJy_5FuKSx1aIWDVaTsNmikLhPomp4utYTcg1d378DW_mke20kbCxpX95LAy0-J2ohDghM"; // certificat Web Push (Cloud Messaging)

@@ -1586,6 +1586,16 @@ if($("saveApiUsagePrefsBtn"))$("saveApiUsagePrefsBtn").onclick=()=>{
  alert(state.prefs.economyMode?t("msgEconomyModeOn"):t("msgApiUsagePrefsSaved"));
 };
 if($("checkRealApiUsageBtn"))$("checkRealApiUsageBtn").onclick=checkRealApiUsage;
+if($("testPushBtn"))$("testPushBtn").onclick=async()=>{
+  const status=$("testPushStatus");
+  if(status)status.textContent="…";
+  try{
+    await apiFetch("/api/notifications/send-test",{method:"POST",email:window.YUKI_ACTIVE_EMAIL});
+    if(status)status.textContent=t("testPushSent");
+  }catch(e){
+    if(status)status.textContent=(e&&e.message)||t("genericError");
+  }
+};
 $("notificationBtn").onclick=async()=>{
   if(!("Notification" in window)) return alert(t("msgNotifUnavailable"));
   const permission = await Notification.requestPermission();
@@ -1668,6 +1678,13 @@ if($("etfScanBtn"))$("etfScanBtn").onclick=()=>{const list=CATALOG.filter(x=>x.t
 if($("adminRefreshBtn"))$("adminRefreshBtn").onclick=renderAdmin;
 refreshHomeOpportunities().catch(()=>{});
 try{updateCheckinStreak();renderCheckinBadge();renderWeeklyRecap()}catch{}
+/* Push app fermée : si la permission est déjà accordée (session précédente),
+   on (ré)enregistre le jeton FCM dès l'ouverture — sinon l'enregistrement
+   n'aurait lieu qu'au clic sur le bouton d'autorisation. Sans configuration
+   Firebase, YukiPush.init s'arrête proprement (mode local inchangé). */
+if("Notification" in window&&Notification.permission==="granted"&&window.YukiPush&&window.YukiPush.onNotificationPermissionGranted){
+  try{window.YukiPush.onNotificationPermissionGranted()}catch{}
+}
 if($("shareWeekJournalBtn"))$("shareWeekJournalBtn").onclick=()=>shareWeeklyCard();
 if($("tradingProfileSelect"))$("tradingProfileSelect").onchange=e=>{state.prefs.tradingProfile=e.target.value||null;applyProfilePersonalization();save()};
 if($("riskAppetiteSelect"))$("riskAppetiteSelect").onchange=e=>{const v=e.target.value||null;state.prefs.riskAppetite=v;if(v)applyRiskDefaults(v);save()};
