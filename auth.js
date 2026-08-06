@@ -377,7 +377,7 @@ const I18N = {
     portfolioTitle:"Portefeuille",
     portfolioDesc:"Vue d'ensemble de tes positions ouvertes (CFD suivies + position Scalping active). Yuki ne se connecte à aucun courtier : ces chiffres reflètent uniquement ce que tu as déclaré.",
     openPositionsLabel:"Positions ouvertes",
-    unrealizedPnlLabel:"PnL non réalisé (indicatif)",
+    unrealizedPnlLabel:"PnL moyen des positions ouvertes (indicatif)",
     allocationTitle:"Répartition par classe d'actif",
 
     /* ---- Scalping ---- */
@@ -982,7 +982,7 @@ const I18N = {
     portfolioTitle:"Portfolio",
     portfolioDesc:"Overview of your open positions (tracked CFDs + active Scalping position). Yuki doesn't connect to any broker: these figures reflect only what you declared.",
     openPositionsLabel:"Open positions",
-    unrealizedPnlLabel:"Unrealized PnL (indicative)",
+    unrealizedPnlLabel:"Average PnL of open positions (indicative)",
     allocationTitle:"Breakdown by asset class",
 
     scalpingTitle:"Scalping Pro mode",

@@ -440,7 +440,31 @@ function renderDeclaredPositionBadge(){
  if(btn)btn.innerHTML=`<span>↕</span><span data-i18n="navPositions">${t("navPositions")}</span>${count?` (${count})`:""}`;
 }
 
-function exitDecision(pos,a){const price=a.price,isBuy=pos.side==="BUY",pnl=(isBuy?price/pos.entry-1:pos.entry/price-1)*100,d=a.atr?Math.max(a.atr*2,price*(pos.risk/100)):price*(pos.risk/100),stop=isBuy?pos.entry-d:pos.entry+d,target=isBuy?pos.entry+d*2:pos.entry-d*2;let action="CONSERVER",reason="Aucun critère de sortie.";if((isBuy&&price<=stop)||(!isBuy&&price>=stop)){action="SORTIR";reason="Stop atteint."}else if((isBuy&&price>=target)||(!isBuy&&price<=target)){action="SORTIR";reason="Objectif atteint."}else if((isBuy&&a.signal==="VENDRE")||(!isBuy&&a.signal==="ACHETER")){action="SORTIR";reason="Signal opposé confirmé."}else if(a.confidence<60){action="SURVEILLER";reason="Confiance faible."}return{action,reason,pnl,stop,target,price}}
+/* ==========================================================================
+   PnL en pourcentage — SOURCE UNIQUE DE VÉRITÉ (correctif V4.9)
+   --------------------------------------------------------------------------
+   La formule était dupliquée à 3 endroits (exitDecision, clôture de
+   position, scalping) et la variante VENTE était FAUSSE :
+     ancien : entry/price - 1     → sur une vente à 100 clôturée à 90,
+                                    affichait +11,11 % au lieu de +10,00 %
+     correct : 1 - price/entry
+   Le biais était asymétrique et systématiquement optimiste (gains
+   surévalués, pertes sous-évaluées), ce qui contredit la règle d'honnêteté
+   du cahier des charges. Les positions à l'ACHAT n'étaient pas affectées.
+   Une seule fonction désormais : plus de divergence possible entre les
+   écrans, le journal, les statistiques et les déclencheurs de sortie.
+   ========================================================================== */
+function pnlPercent(side,entry,price){
+  const e=Number(entry),p=Number(price);
+  if(!Number.isFinite(e)||!Number.isFinite(p)||e<=0||p<=0)return null;
+  return (side==="BUY" ? (p/e-1) : (1-p/e))*100;
+}
+/* Affichage sûr d'un PnL (null si le calcul n'a pas pu se faire). */
+function fmtPnl(v,withSign=true){
+  if(!Number.isFinite(v))return "—";
+  return (withSign&&v>=0?"+":"")+v.toFixed(2)+"%";
+}
+function exitDecision(pos,a){const price=a.price,isBuy=pos.side==="BUY",pnl=pnlPercent(pos.side,pos.entry,price),d=a.atr?Math.max(a.atr*2,price*(pos.risk/100)):price*(pos.risk/100),stop=isBuy?pos.entry-d:pos.entry+d,target=isBuy?pos.entry+d*2:pos.entry-d*2;let action="CONSERVER",reason="Aucun critère de sortie.";if((isBuy&&price<=stop)||(!isBuy&&price>=stop)){action="SORTIR";reason="Stop atteint."}else if((isBuy&&price>=target)||(!isBuy&&price<=target)){action="SORTIR";reason="Objectif atteint."}else if((isBuy&&a.signal==="VENDRE")||(!isBuy&&a.signal==="ACHETER")){action="SORTIR";reason="Signal opposé confirmé."}else if(a.confidence<60){action="SURVEILLER";reason="Confiance faible."}return{action,reason,pnl,stop,target,price}}
 /* Traduction d'affichage des codes internes (action de sortie CFD, côté
    position, statut scalping…). Les codes eux-mêmes restent en français en
    interne — ce sont des identifiants stables comparés partout dans l'état
@@ -475,7 +499,7 @@ function trReason(fr){
 function closePositionToJournal(uid,exitPrice){
  const pos=state.positions.find(p=>p.uid===uid);if(!pos)return;
  const item=CATALOG.find(x=>x.id===pos.id)||allCatalog().find(x=>x.id===pos.id);
- const isBuy=pos.side==="BUY",pnl=(isBuy?exitPrice/pos.entry-1:pos.entry/exitPrice-1)*100;
+ const isBuy=pos.side==="BUY",pnl=pnlPercent(pos.side,pos.entry,exitPrice);
  state.journal=state.journal||[];
  state.journal.unshift({uid:pos.uid,id:pos.id,name:item?item.name:pos.id,side:pos.side,entry:pos.entry,exit:exitPrice,pnl,declared:!!pos.declared,openedAt:pos.createdAt,closedAt:new Date().toLocaleString("fr-FR")});
  state.positions=state.positions.filter(p=>p.uid!==uid);
@@ -527,9 +551,9 @@ async function attemptPositionRefresh(pos,item){
   if(previousAction!==e.action){
     pos.lastAction=e.action;
     if(previousAction&&"Notification"in window&&Notification.permission==="granted"){
-      showYukiNotification("Yuki Trader Pro",`${trAction(e.action)} · ${item.name} — ${trReason(e.reason)} · ${t("fieldPrice")} ${money(e.price)} · PnL ${e.pnl.toFixed(2)}%`,{tag:`position-${pos.uid}`,panel:"portfolio"});
+      showYukiNotification("Yuki Trader Pro",`${trAction(e.action)} · ${item.name} — ${trReason(e.reason)} · ${t("fieldPrice")} ${money(e.price)} · PnL ${fmtPnl(e.pnl)}`,{tag:`position-${pos.uid}`,panel:"portfolio"});
     }
-    if(previousAction&&e.action==="SORTIR"&&window.YukiLive)try{window.YukiLive.react("positionExit",{name:item.name,pnl:e.pnl.toFixed(2),panel:"positions"})}catch{}
+    if(previousAction&&e.action==="SORTIR"&&window.YukiLive)try{window.YukiLive.react("positionExit",{name:item.name,pnl:fmtPnl(e.pnl,false),panel:"positions"})}catch{}
   }
  }catch(err){
   res.consecutiveFailures=(res.consecutiveFailures||0)+1;
@@ -606,7 +630,7 @@ function renderPositionCard(pos,item){
    div.innerHTML=`
     <div class="item-head"><strong class="position-name">${item.name} · ${trSide(pos.side==="BUY"?"ACHAT":"VENTE")}</strong><span class="position-status status-${statusKey}">${statusLabel}</span></div>
     ${source}
-    <div class="position-data"><small>${t("entryShort")} ${money(pos.entry)} · ${t("fieldPrice")} ${money(g.price)} · PnL ${g.pnl.toFixed(2)}%</small></div>
+    <div class="position-data"><small>${t("entryShort")} ${money(pos.entry)} · ${t("fieldPrice")} ${money(g.price)} · PnL ${fmtPnl(g.pnl)}</small></div>
     <div class="item-head"><span class="exit ${g.action==="SORTIR"?"sell":"hold"}">${trAction(g.action)}</span></div>
     <p class="position-reason">${trReason(g.reason)}</p>
     <small>${t("stopLabel")} ${money(g.stop)} · ${t("objectiveShort")} ${money(g.target)}</small>
@@ -696,8 +720,16 @@ function renderPortfolio(){
  const open=state.positions||[],sp=state.scalping&&state.scalping.position;
  const count=open.length+(sp?1:0);
  if($("portfolioOpenCount"))$("portfolioOpenCount").textContent=count;
- const unrealized=open.reduce((a,p)=>a+(Number.isFinite(p.pnl)?p.pnl:0),0)+(sp&&Number.isFinite(sp.pnl)?sp.pnl:0);
- if($("portfolioUnrealized"))$("portfolioUnrealized").textContent=count?(unrealized>=0?"+":"")+unrealized.toFixed(2)+"%":"—";
+ /* Correctif V4.9 : on affiche la MOYENNE des PnL, pas leur somme.
+    Additionner des pourcentages de positions différentes n'a pas de sens
+    mathématique sans connaître les montants engagés (+10 % sur une
+    position et +5 % sur une autre ne font pas +15 %). L'application ne
+    demande pas la taille des positions, donc la moyenne non pondérée est
+    l'agrégat honnête : elle décrit la performance moyenne des positions
+    ouvertes. Le libellé de l'écran le précise. */
+ const pnls=open.map(p=>p.pnl).concat(sp?[sp.pnl]:[]).filter(v=>Number.isFinite(v));
+ const unrealized=pnls.length?pnls.reduce((a,b)=>a+b,0)/pnls.length:null;
+ if($("portfolioUnrealized"))$("portfolioUnrealized").textContent=(count&&unrealized!==null)?fmtPnl(unrealized):"—";
  const byClass={};
  open.forEach(p=>{const item=CATALOG.find(x=>x.id===p.id);const cls=item?item.type:"CFD";byClass[cls]=(byClass[cls]||0)+1});
  if(sp){const item=allCatalog().find(x=>x.id===sp.id);const cls=item?item.type:"CFD";byClass[cls]=(byClass[cls]||0)+1}
@@ -973,7 +1005,7 @@ function confirmScalpPosition(){
 async function refreshScalpPosition(){
  const pos=state.scalping.position;if(!pos)return renderScalpPosition();const item=allCatalog().find(x=>x.id===pos.id);
  try{
-  const live=await fetchScalpPrice(item),price=live.price,isBuy=pos.side==="BUY",pnl=(isBuy?price/pos.entry-1:pos.entry/price-1)*100;const s=state.scalping.lastSignal&&state.scalping.lastSignal.itemId===item.id?state.scalping.lastSignal:{signal:"ATTENDRE"};
+  const live=await fetchScalpPrice(item),price=live.price,isBuy=pos.side==="BUY",pnl=pnlPercent(pos.side,pos.entry,price);const s=state.scalping.lastSignal&&state.scalping.lastSignal.itemId===item.id?state.scalping.lastSignal:{signal:"ATTENDRE"};
   let action="CONSERVER",reason="Structure scalping intacte.";
   if((isBuy&&price<=pos.stop)||(!isBuy&&price>=pos.stop)){action="SORTIE CONSEILLÉE";reason="Stop atteint."}
   else if((isBuy&&price>=pos.target2)||(!isBuy&&price<=pos.target2)){action="SORTIE CONSEILLÉE";reason="Objectif 2 atteint."}
@@ -981,7 +1013,7 @@ async function refreshScalpPosition(){
   else if((isBuy&&price>=pos.target1)||(!isBuy&&price<=pos.target1)){action="VIGILANCE";reason="Objectif 1 atteint."}
   else if(s.signal==="ATTENDRE"){action="VIGILANCE";reason="Momentum affaibli."}
   const old=pos.lastAction;Object.assign(pos,{lastAction:action,lastPrice:price,pnl});save();
-  if(old!==action&&action!=="CONSERVER"&&"Notification"in window&&Notification.permission==="granted")showYukiNotification("Yuki Trader Pro",`${trAction(action)} · ${item.name} — ${trReason(reason)} · ${t("fieldPrice")} ${money(price)} · PnL ${pnl.toFixed(2)}%`,{tag:`scalp-${item.id}`,panel:"scalping"});
+  if(old!==action&&action!=="CONSERVER"&&"Notification"in window&&Notification.permission==="granted")showYukiNotification("Yuki Trader Pro",`${trAction(action)} · ${item.name} — ${trReason(reason)} · ${t("fieldPrice")} ${money(price)} · PnL ${fmtPnl(pnl)}`,{tag:`scalp-${item.id}`,panel:"scalping"});
   renderScalpPosition(action,reason)
  }catch(e){$("scalpPositionStatus").className="item scalp-watch";$("scalpPositionStatus").innerHTML=`<strong>${t("unavailableShort")}</strong><br><small>${feMsg(e)}</small>`}
 }
