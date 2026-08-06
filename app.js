@@ -224,10 +224,29 @@ function pickBenchmarkId(item){
  if(item.market==="Europe")return item.id==="STOXX50E"?"DAX":"STOXX50E";
  return item.id==="SPX"?"NDX":"SPX";
 }
-async function analyseItem(item,render=true,store=true){
+/* ==========================================================================
+   Profondeur d'analyse (correctif V4.10)
+   --------------------------------------------------------------------------
+   Le paramètre `render` (drapeau d'AFFICHAGE) commandait aussi la
+   PROFONDEUR d'analyse : quand il valait false, la confirmation
+   multi-unités de temps et l'ajustement par corrélation étaient sautés.
+   Conséquence : le tableau de bord et l'écran d'analyse pouvaient afficher
+   deux confiances différentes pour le MÊME instrument.
+
+   Les deux notions sont désormais dissociées :
+     - `render` : mettre à jour l'interface d'analyse. Rien d'autre.
+     - `deep`   : exécuter l'analyse complète (multi-unités + corrélation).
+   Par défaut `deep` suit `render` pour préserver le comportement existant
+   de tous les appels historiques. Le tableau de bord reste en analyse
+   rapide (économie de quota API) mais l'affiche explicitement, et tout
+   candidat dépassant le seuil 🔥 est re-analysé en profondeur AVANT
+   notification — on n'alerte jamais sur une pré-sélection.
+   ========================================================================== */
+async function analyseItem(item,render=true,store=true,deep=render){
  const values=await fetchSeries(item);
  let a=analyseSeries(values);
- if(render){
+ a.deepAnalysis=!!deep;
+ if(deep){
   try{
    const hvalues=await fetchSeries(item,higherTimeframe(currentHorizon));
    const ha=analyseSeries(hvalues);
@@ -1173,6 +1192,20 @@ function shareWeeklyCard(){
   window.YukiShareCard.shareWeekly(stats).catch(()=>{});
 }
 
+const MAX_HOT_CONFIRMATIONS=3;
+async function confirmAndNotifyHotCandidates(results){
+  if(state.prefs.hotAlertEnabled===false)return;
+  const th=+state.prefs.hotAlertThreshold||90;
+  const candidates=results
+    .filter(r=>r.signal!=="ATTENDRE"&&!r.insufficientData&&r.confidence>=th)
+    .slice(0,MAX_HOT_CONFIRMATIONS);
+  for(const c of candidates){
+    try{
+      const full=await analyseItem(c.item,false,false,true); // analyse complète
+      maybeHotNotify(full);
+    }catch{ /* données indisponibles : on n'alerte pas plutôt que d'alerter à tort */ }
+  }
+}
 async function refreshHomeOpportunities(){
   const box=$("homeOpportunityBox"),top5box=$("homeTop5Box"),marketBox=$("marketStateBox"),scoreBox=$("aiScoreBox"),alertsBox=$("homeAlertsBox");
   if(!box||!top5box)return;
@@ -1189,8 +1222,16 @@ async function refreshHomeOpportunities(){
   box.innerHTML=`<div class="item ${best.signal==="ACHETER"?"ok":best.signal==="VENDRE"?"danger":""}">
     <div class="item-head"><strong class="${best.signal==="ACHETER"?"buy":best.signal==="VENDRE"?"sell":"hold"}">${trSignal(best.signal)} · ${best.item.name}</strong><strong>${best.confidence}% · ${best.quality}</strong></div>
     <small>${best.item.xtb||""} · ${t("fieldPrice")} ${money(best.price)} · ${best.reason||""}</small></div>`;
-  top5box.innerHTML=results.slice(0,5).map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}%</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join("");
-  results.forEach(r=>{try{maybeHotNotify(r)}catch{}}); // alerte 🔥 sur tout le pool, pas seulement l'instrument sélectionné
+  top5box.innerHTML=results.slice(0,5).map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}%</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join("")
+    +`<p class="muted tiny quick-scan-note">${t("quickScanNote")}</p>`;
+  /* Alerte 🔥 : le pool est scanné en analyse RAPIDE (économie de quota).
+     On ne notifie jamais sur cette base : chaque candidat au-dessus du
+     seuil est re-analysé EN PROFONDEUR (multi-unités + corrélation), et
+     seul le résultat complet décide. Un candidat rapide que l'analyse
+     complète dégrade sous le seuil ne déclenche donc aucune alerte —
+     c'est ce qui évite de saturer l'utilisateur de fausses opportunités.
+     Au plus 3 confirmations par scan, pour borner le coût API. */
+  await confirmAndNotifyHotCandidates(results);
   renderMarketState(results);
   renderAiScore(results);
   window.__yukiLastOpportunityResults=results;
@@ -1284,9 +1325,22 @@ function renderAiScore(results){
 }
 /* « Alertes récentes » : les derniers signaux qui ont réellement déclenché
    une notification (voir `maybeNotify`), pas tout l'historique. */
+/* Durée de vie d'une annonce à l'affichage. Une opportunité technique se
+   périme vite : passé ce délai, l'afficher encore serait trompeur (le prix
+   et la configuration ont changé). Le signal reste dans l'historique et les
+   statistiques — seule sa présence dans « Alertes récentes » expire.
+   Le délai suit l'horizon d'analyse : une alerte court terme périme plus
+   vite qu'une alerte sur unité journalière. */
+const ALERT_TTL_MS={"1h":2*3600000,"4h":8*3600000,"1day":48*3600000};
+function alertTtlFor(horizon){return ALERT_TTL_MS[horizon]||ALERT_TTL_MS["1h"]}
+function isAlertFresh(s,now=Date.now()){
+  if(!s||!s.timestamp)return false;
+  return (now-s.timestamp)<alertTtlFor(s.horizon);
+}
 function renderHomeAlerts(){
   const box=$("homeAlertsBox");if(!box)return;
-  const alerts=(state.signals||[]).filter(s=>s.notified).slice(0,5);
+  const now=Date.now();
+  const alerts=(state.signals||[]).filter(s=>s.notified&&isAlertFresh(s,now)).slice(0,5);
   box.innerHTML=alerts.length?alerts.map(a=>`<div class="item"><div class="item-head"><strong class="${a.signal==="ACHETER"?"buy":a.signal==="VENDRE"?"sell":"hold"}">${trSignal(a.signal)} · ${a.name}</strong><strong>${a.confidence}%</strong></div><small>${a.time}</small></div>`).join(""):`<div class="item muted">${t("noRecentAlerts")}</div>`;
 }
 
