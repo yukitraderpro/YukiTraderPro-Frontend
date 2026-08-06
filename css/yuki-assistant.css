@@ -253,3 +253,6 @@
 
 /* ---- Partage « Wrapped » ---- */
 .weekly-recap-share{margin-top:10px;padding:8px 14px;font-size:.85rem}
+
+/* Mention de pré-sélection sous le Top 5 */
+.quick-scan-note{margin:8px 2px 0;line-height:1.35;opacity:.75}

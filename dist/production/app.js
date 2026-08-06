@@ -172,10 +172,11 @@ if(item.sector&&/crypto/i.test(item.sector))return item.id==="BTCUSD"?"ETHUSD":"
 if(item.market==="Europe")return item.id==="STOXX50E"?"DAX":"STOXX50E";
 return item.id==="SPX"?"NDX":"SPX";
 }
-async function analyseItem(item,render=true,store=true){
+async function analyseItem(item,render=true,store=true,deep=render){
 const values=await fetchSeries(item);
 let a=analyseSeries(values);
-if(render){
+a.deepAnalysis=!!deep;
+if(deep){
 try{
 const hvalues=await fetchSeries(item,higherTimeframe(currentHorizon));
 const ha=analyseSeries(hvalues);
@@ -977,6 +978,20 @@ const checkinDays=((state.checkin&&state.checkin.days)||[]).filter(d=>new Date(d
 const stats=window.YukiShareCard.buildWeeklyShareStats(state.signals||[],checkinDays);
 window.YukiShareCard.shareWeekly(stats).catch(()=>{});
 }
+const MAX_HOT_CONFIRMATIONS=3;
+async function confirmAndNotifyHotCandidates(results){
+if(state.prefs.hotAlertEnabled===false)return;
+const th=+state.prefs.hotAlertThreshold||90;
+const candidates=results
+.filter(r=>r.signal!=="ATTENDRE"&&!r.insufficientData&&r.confidence>=th)
+.slice(0,MAX_HOT_CONFIRMATIONS);
+for(const c of candidates){
+try{
+const full=await analyseItem(c.item,false,false,true);
+maybeHotNotify(full);
+}catch{  }
+}
+}
 async function refreshHomeOpportunities(){
 const box=$("homeOpportunityBox"),top5box=$("homeTop5Box"),marketBox=$("marketStateBox"),scoreBox=$("aiScoreBox"),alertsBox=$("homeAlertsBox");
 if(!box||!top5box)return;
@@ -993,8 +1008,9 @@ const best=results[0];
 box.innerHTML=`<div class="item ${best.signal==="ACHETER"?"ok":best.signal==="VENDRE"?"danger":""}">
 <div class="item-head"><strong class="${best.signal==="ACHETER"?"buy":best.signal==="VENDRE"?"sell":"hold"}">${trSignal(best.signal)} · ${best.item.name}</strong><strong>${best.confidence}% · ${best.quality}</strong></div>
 <small>${best.item.xtb||""} · ${t("fieldPrice")} ${money(best.price)} · ${best.reason||""}</small></div>`;
-top5box.innerHTML=results.slice(0,5).map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}%</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join("");
-results.forEach(r=>{try{maybeHotNotify(r)}catch{}});
+top5box.innerHTML=results.slice(0,5).map(r=>`<div class="item"><div class="item-head"><strong class="${r.signal==="ACHETER"?"buy":r.signal==="VENDRE"?"sell":"hold"}">${trSignal(r.signal)} · ${r.item.name}</strong><strong>${r.confidence}%</strong></div><small>${r.item.xtb||""} · ${t("fieldPrice")} ${money(r.price)}</small></div>`).join("")
++`<p class="muted tiny quick-scan-note">${t("quickScanNote")}</p>`;
+await confirmAndNotifyHotCandidates(results);
 renderMarketState(results);
 renderAiScore(results);
 window.__yukiLastOpportunityResults=results;
@@ -1065,9 +1081,16 @@ const label=avg>=85?"Excellent":avg>=70?"Bon":avg>=55?"Moyen":"Faible";
 const cls=avg>=85?"buy":avg>=70?"buy":avg>=55?"hold":"sell";
 box.innerHTML=`<strong class="score ${cls}">${avg}</strong><small class="muted"> / 100 · ${label} · ${actionable.length} signal(aux) exploitable(s)</small>`;
 }
+const ALERT_TTL_MS={"1h":2*3600000,"4h":8*3600000,"1day":48*3600000};
+function alertTtlFor(horizon){return ALERT_TTL_MS[horizon]||ALERT_TTL_MS["1h"]}
+function isAlertFresh(s,now=Date.now()){
+if(!s||!s.timestamp)return false;
+return (now-s.timestamp)<alertTtlFor(s.horizon);
+}
 function renderHomeAlerts(){
 const box=$("homeAlertsBox");if(!box)return;
-const alerts=(state.signals||[]).filter(s=>s.notified).slice(0,5);
+const now=Date.now();
+const alerts=(state.signals||[]).filter(s=>s.notified&&isAlertFresh(s,now)).slice(0,5);
 box.innerHTML=alerts.length?alerts.map(a=>`<div class="item"><div class="item-head"><strong class="${a.signal==="ACHETER"?"buy":a.signal==="VENDRE"?"sell":"hold"}">${trSignal(a.signal)} · ${a.name}</strong><strong>${a.confidence}%</strong></div><small>${a.time}</small></div>`).join(""):`<div class="item muted">${t("noRecentAlerts")}</div>`;
 }
 function scanMarketClass(cls,targetId,progressId,count){
