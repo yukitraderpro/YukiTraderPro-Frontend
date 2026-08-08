@@ -179,3 +179,8 @@ body.mode-simple .expert-only{display:none !important}
 .ui-mode-choice small{font-weight:500;color:var(--muted);display:block;margin-top:4px}
 #uiModeDialog{border:0;border-radius:18px;background:#1e293b;color:#e2e8f0;max-width:440px;width:calc(100% - 30px)}
 #uiModeDialog::backdrop{background:rgba(2,6,23,.78)}
+
+/* Liens légaux (politique de confidentialité, suppression de compte) */
+.legal-link,.ob-policy-links a{color:#38bdf8;text-decoration:underline;font-size:.95rem}
+.legal-link:hover,.ob-policy-links a:hover{color:#7dd3fc}
+.ob-policy-links{margin:-4px 0 10px 26px}

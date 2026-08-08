@@ -29,7 +29,13 @@
         // Fusion superficielle : le cloud est prioritaire pour les clés qu'il connaît,
         // mais on ne supprime jamais de clé locale que le cloud ignorerait (état plus
         // récent côté client jamais encore synchronisé, ex. juste après une mise à jour).
-        Object.assign(state, result.state);
+        // La clé API reste strictement locale : un état cloud hérité d'une
+        // version antérieure ne doit jamais l'écraser ni la réintroduire.
+        const localApiKey = state.apiKey;
+        const incoming = Object.assign({}, result.state);
+        delete incoming.apiKey;
+        Object.assign(state, incoming);
+        state.apiKey = localApiKey;
         if (typeof window.save === "function") window.save();
         if (typeof window.populate === "function") window.populate();
         console.info("[YukiSync] État restauré depuis le cloud (version " + result.version + ").");
@@ -39,10 +45,19 @@
     }
   }
 
+  /* RGPD — la clé API Twelve Data appartient à l'utilisateur et ne doit jamais
+     quitter l'appareil (voir confidentialite.html et store-assets/DATA_SAFETY.md).
+     On la retire donc explicitement de l'objet envoyé au backend. */
+  function sanitizeForCloud(src) {
+    const copy = Object.assign({}, src);
+    delete copy.apiKey;
+    return copy;
+  }
+
   async function push() {
     if (!enabled() || typeof state !== "object" || !state) return;
     try {
-      await apiFetch("/api/sync/state", { method: "PUT", email: currentEmail, body: { state } });
+      await apiFetch("/api/sync/state", { method: "PUT", email: currentEmail, body: { state: sanitizeForCloud(state) } });
     } catch (e) {
       console.warn("[YukiSync] Envoi cloud impossible (mode hors-ligne ?)", e.message);
     }

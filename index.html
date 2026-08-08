@@ -132,7 +132,8 @@
 <h2 style="margin-top:14px" data-i18n="scenariosTitle">Scénarios</h2>
 <div id="scenariosBox" class="scenario-grid"></div>
 </div>
-<div class="risk-box"><div class="expert-only"><span data-i18n="stopLabel">Stop indicatif</span><strong id="stop">—</strong></div><div><span data-i18n="targetLabel">Objectif indicatif</span><strong id="target">—</strong></div><div class="expert-only"><span data-i18n="rrLabel">Ratio potentiel</span><strong id="rr">—</strong></div></div>
+<div class="risk-box"><div class="expert-only"><span data-i18n="stopLabel">Borne basse de volatilité (2× ATR)</span><strong id="stop">—</strong></div><div><span data-i18n="targetLabel">Borne haute de volatilité (4× ATR)</span><strong id="target">—</strong></div><div hidden class="expert-only"><span data-i18n="rrLabel">Ratio potentiel</span><strong id="rr">—</strong></div></div>
+<p class="tiny muted" data-i18n="levelsDisclaimer">Ces bornes sont des multiples de l'ATR (volatilité mesurée), pas des niveaux d'entrée ou de sortie recommandés.</p>
 <div id="executionConfirmBox" class="execution-confirm hidden-card">
   <label class="execution-check">
     <input id="executedCheckbox" type="checkbox">
@@ -341,10 +342,10 @@
 <button id="scalpingAnalyseBtn" class="primary full" data-i18n="analyseNow">Analyser maintenant</button>
 <div id="scalpingSignalBox" class="signal hold"><small data-i18n="scalpingLabel">SCALPING</small><strong id="scalpingSignal">ATTENDRE</strong></div>
 <div class="scalp-levels">
-<div><span data-i18n="entrySuggestedLabel">Entrée suggérée</span><strong id="scalpEntry">—</strong></div>
+<div><span data-i18n="entrySuggestedLabel">Prix actuel</span><strong id="scalpEntry">—</strong></div>
 <div><span data-i18n="stopLabel">Stop</span><strong id="scalpStop">—</strong></div>
-<div><span data-i18n="target1Label">Objectif 1</span><strong id="scalpTarget1">—</strong></div>
-<div><span data-i18n="target2Label">Objectif 2</span><strong id="scalpTarget2">—</strong></div>
+<div><span data-i18n="target1Label">Borne haute 1 (1,6× ATR)</span><strong id="scalpTarget1">—</strong></div>
+<div><span data-i18n="target2Label">Borne haute 2 (2,6× ATR)</span><strong id="scalpTarget2">—</strong></div>
 <div><span data-i18n="scoreLabel">Score Yuki</span><strong id="scalpScore">—</strong></div>
 <div><span data-i18n="validityLabel">Validité</span><strong id="scalpValidity">—</strong></div>
 </div>
@@ -443,6 +444,11 @@
   <button id="runPwaDiagnosticBtn" class="primary full" data-i18n="rerunDiagBtn">Relancer le diagnostic</button>
 </div>
 
+<div class="card"><h2 data-i18n="legalTitle">Confidentialité et documents légaux</h2>
+<p class="muted tiny" data-i18n="legalDesc">Consultez à tout moment la politique de confidentialité et la procédure de suppression de compte.</p>
+<p><a class="legal-link" href="confidentialite.html" target="_blank" rel="noopener" data-i18n="privacyPolicyLink">Lire la Politique de confidentialité</a></p>
+<p><a class="legal-link" href="suppression-compte.html" target="_blank" rel="noopener" data-i18n="deletionPageLink">Suppression du compte et des données</a></p>
+</div>
 <div class="card"><h2 data-i18n="versionTitle">Version / À propos</h2>
 <p class="muted">Yuki Trader Pro <strong id="appVersion">4.0</strong></p>
 <p class="muted tiny" data-i18n="versionDesc">Assistant d’aide à la décision. Les analyses sont probabilistes et ne constituent jamais une certitude ni un conseil en investissement personnalisé.</p>
@@ -576,6 +582,7 @@
     <h2 data-i18n="ob5Title">Dernière étape</h2>
     <label class="ob-checkbox-row"><input type="checkbox" id="obTermsCheckbox"><span data-i18n="ob5Terms">J'accepte les Conditions Générales d'Utilisation</span></label>
     <label class="ob-checkbox-row"><input type="checkbox" id="obPrivacyCheckbox"><span data-i18n="ob5Privacy">J'accepte la Politique de confidentialité</span></label>
+    <p class="tiny ob-policy-links"><a href="confidentialite.html" target="_blank" rel="noopener" data-i18n="privacyPolicyLink">Lire la Politique de confidentialité</a></p>
     <p class="tiny muted" data-i18n="ob5Disclaimer">Yuki Trader Pro est un outil d'aide à la décision. Il ne fournit jamais de conseil financier personnalisé.</p>
     <p class="tiny ob-error" id="obTermsError" data-i18n="ob5Required" style="display:none">Les deux cases doivent être cochées pour continuer.</p>
     <button type="button" id="obAcceptBtn" class="primary full" data-i18n="ob5Cta">J'accepte et je continue</button>
