@@ -184,3 +184,9 @@ body.mode-simple .expert-only{display:none !important}
 .legal-link,.ob-policy-links a{color:#38bdf8;text-decoration:underline;font-size:.95rem}
 .legal-link:hover,.ob-policy-links a:hover{color:#7dd3fc}
 .ob-policy-links{margin:-4px 0 10px 26px}
+
+/* Sécurité : sections et onglets réservés à l'administration. Masqués tant que
+   <html> ne porte pas la classe .is-admin, posée uniquement par
+   applyRoleVisibility() après vérification du rôle. Fail-closed : un écran qui
+   n'appelle pas cette fonction (mode démo, etc.) n'expose jamais l'admin. */
+html:not(.is-admin) [data-requires-admin]{display:none !important}

@@ -2013,6 +2013,9 @@ window.enterDemoMode=function(){
   const app=document.querySelector(".app");
   if(app)app.classList.remove("hidden-card");
   if(typeof applyI18n==="function")applyI18n();
+  /* Le mode démo n'a aucun rôle : on réapplique explicitement la visibilité
+     pour garantir que l'onglet et le panneau Admin restent masqués. */
+  if(typeof applyRoleVisibility==="function")applyRoleVisibility();
   initApp();
   const banner=$("demoBanner");
   if(banner){

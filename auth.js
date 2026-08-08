@@ -1538,8 +1538,14 @@ async function renderFounderBadge(){
 
 function applyRoleVisibility(){
   const admin = isAdmin();
+  /* Sécurité : les éléments [data-requires-admin] sont masqués PAR DÉFAUT via
+     CSS (html:not(.is-admin)). On ne les révèle qu'en ajoutant la classe sur
+     <html>. Cette logique « fail-closed » garantit qu'un chemin d'entrée qui
+     oublierait d'appeler cette fonction (ex. mode démo) laisse l'admin caché,
+     au lieu de l'exposer. */
+  document.documentElement.classList.toggle("is-admin", !!admin);
   document.querySelectorAll("[data-requires-admin]").forEach(el=>{
-    el.style.display = admin ? "" : "none";
+    el.style.removeProperty("display");
   });
   const pro = isPro();
   document.querySelectorAll("[data-requires-pro]").forEach(el=>{
