@@ -1634,6 +1634,7 @@ if(authScreen)authScreen.classList.add("hidden-card");
 const app=document.querySelector(".app");
 if(app)app.classList.remove("hidden-card");
 if(typeof applyI18n==="function")applyI18n();
+if(typeof applyRoleVisibility==="function")applyRoleVisibility();
 initApp();
 const banner=$("demoBanner");
 if(banner){

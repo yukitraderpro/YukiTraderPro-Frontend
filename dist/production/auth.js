@@ -1364,8 +1364,9 @@ badge.classList.add("hidden-card");
 }
 function applyRoleVisibility(){
 const admin = isAdmin();
+document.documentElement.classList.toggle("is-admin", !!admin);
 document.querySelectorAll("[data-requires-admin]").forEach(el=>{
-el.style.display = admin ? "" : "none";
+el.style.removeProperty("display");
 });
 const pro = isPro();
 document.querySelectorAll("[data-requires-pro]").forEach(el=>{
