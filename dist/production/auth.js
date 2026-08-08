@@ -92,9 +92,10 @@ async function logOut(){
 try{ await apiFetch("/api/auth/logout", { method:"POST", skipAuth:true }); }catch{}
 SESSION = { user:null, accessToken:null };
 }
-async function resetPassword(email,newPassword){
-if(newPassword.length < 8) throw new Error(t("errPasswordTooShort"));
-throw new Error(t("errResetNotAvailableServer"));
+async function requestPasswordReset(email){
+if(!email || !email.includes("@")) throw new Error(t("errInvalidEmail"));
+const res = await apiFetch("/api/auth/forgot-password", { method:"POST", body:{ email } });
+return (res && res.message) || t("msgResetEmailSent");
 }
 async function refreshCurrentUser(){
 const me = await apiFetch("/api/auth/me");
@@ -129,7 +130,8 @@ password:"Mot de passe",
 newPassword:"Nouveau mot de passe",
 loginBtn:"Se connecter",
 signupBtn:"Créer mon compte",
-resetBtn:"Réinitialiser le mot de passe",
+resetBtn:"Envoyer le lien de réinitialisation",
+forgotHint:"Saisissez votre adresse e-mail : nous vous enverrons un lien pour choisir un nouveau mot de passe.",
 backToLogin:"Retour à la connexion",
 noAccount:"Pas encore de compte ?",
 haveAccount:"Déjà un compte ?",
@@ -587,7 +589,9 @@ errInvalidEmail:"Adresse e-mail invalide.",
 errPasswordTooShort:"Le mot de passe doit contenir au moins 8 caractères.",
 errAccountExists:"Un compte existe déjà avec cet e-mail.",
 errWrongCredentials:"E-mail ou mot de passe incorrect.",
-errResetNotAvailableServer:"La réinitialisation de mot de passe par e-mail n'est pas encore disponible en mode serveur — contacte le support.",
+msgResetEmailSent:"Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d'être envoyé. Pensez à vérifier vos courriers indésirables.",
+errInvalidEmail:"Adresse e-mail invalide.",
+resetPageTitle:"Choisir un nouveau mot de passe",
 errNoAccountFound:"Aucun compte trouvé avec cet e-mail.",
 csvFieldSymbol:"Symbole / ticker",
 csvFieldName:"Nom de l'actif",
@@ -702,7 +706,8 @@ password:"Password",
 newPassword:"New password",
 loginBtn:"Log in",
 signupBtn:"Create my account",
-resetBtn:"Reset password",
+resetBtn:"Send reset link",
+forgotHint:"Enter your e-mail address: we will send you a link to choose a new password.",
 backToLogin:"Back to login",
 noAccount:"No account yet?",
 haveAccount:"Already have an account?",
@@ -1160,7 +1165,9 @@ errInvalidEmail:"Invalid email address.",
 errPasswordTooShort:"The password must be at least 8 characters long.",
 errAccountExists:"An account already exists with this email.",
 errWrongCredentials:"Incorrect email or password.",
-errResetNotAvailableServer:"Password reset by email isn't available yet in server mode — contact support.",
+msgResetEmailSent:"If an account exists for this address, a reset e-mail has just been sent. Please check your spam folder.",
+errInvalidEmail:"Invalid e-mail address.",
+resetPageTitle:"Choose a new password",
 errNoAccountFound:"No account found with this email.",
 csvFieldSymbol:"Symbol / ticker",
 csvFieldName:"Asset name",
@@ -1317,14 +1324,14 @@ enterApp();
 };
 document.getElementById("authMode-forgot").onsubmit = async e=>{
 e.preventDefault();
+const errEl = document.getElementById("authError");
 try{
 const email = document.getElementById("forgotEmail").value;
-const pw = document.getElementById("forgotNewPassword").value;
-await resetPassword(email,pw);
-document.getElementById("authError").style.color = "#86efac";
-document.getElementById("authError").textContent = t("msgPasswordUpdated");
-setTimeout(()=>{ document.getElementById("authError").style.color=""; showAuthMode("login"); },1200);
-}catch(err){ document.getElementById("authError").textContent = err.message; }
+const message = await requestPasswordReset(email);
+errEl.style.color = "#86efac";
+errEl.textContent = message;
+setTimeout(()=>{ errEl.style.color=""; showAuthMode("login"); },4000);
+}catch(err){ errEl.style.color=""; errEl.textContent = err.message; }
 };
 document.querySelectorAll(".lang-btn").forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
 }

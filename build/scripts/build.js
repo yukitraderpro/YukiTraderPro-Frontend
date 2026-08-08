@@ -45,6 +45,7 @@ const STATIC_ASSETS = [
   'firebase-messaging-sw.js',
   'confidentialite.html',
   'suppression-compte.html', // récepteur FCM app fermée : copié tel quel, doit rester à la racine sous ce nom exact
+  'reinitialiser-mot-de-passe.html', // cible du lien de réinitialisation envoyé par e-mail (voir backend/src/services/mailService.js)
 
   'icon.svg',
   'icon-192.png',
