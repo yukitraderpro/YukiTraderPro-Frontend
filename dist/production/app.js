@@ -1426,6 +1426,20 @@ alert(feMsg(e));
 }
 if($("subscribeBtn"))$("subscribeBtn").onclick=launchSubscriptionFlow;
 if($("logoutBtn"))$("logoutBtn").onclick=async()=>{if(confirm(t("msgConfirmLogout"))){flushSave();await logOut();location.reload()}};
+if($("deleteAccountBtn"))$("deleteAccountBtn").onclick=async()=>{
+if(!confirm(t("msgConfirmDeleteAccount")))return;
+const password=prompt(t("msgDeleteAccountPassword"));
+if(!password)return;
+try{
+const r=await apiFetch("/api/auth/delete-account",{method:"POST",body:{password}});
+try{localStorage.removeItem(currentStateKey())}catch{}
+try{localStorage.removeItem("yuki_pro_api_cache_v1")}catch{}
+alert((r&&r.subscriptionNotice)||t("msgAccountDeleted"));
+location.reload();
+}catch(e){
+alert((e&&e.message)||t("genericError"));
+}
+};
 document.querySelectorAll("[data-market-class]").forEach(b=>b.onclick=()=>scanMarketClass(b.dataset.marketClass,"marketRanking","marketScanProgress",+( $("marketScanCount")?.value||25)));
 if($("etfScanBtn"))$("etfScanBtn").onclick=()=>{const list=CATALOG.filter(x=>x.type==="ETF").slice(0,+($("etfScanCount")?.value||40));scanList(list,"etfRanking","etfScanProgress")};
 if($("adminRefreshBtn"))$("adminRefreshBtn").onclick=renderAdmin;

@@ -256,3 +256,8 @@
 
 /* Mention de pré-sélection sous le Top 5 */
 .quick-scan-note{margin:8px 2px 0;line-height:1.35;opacity:.75}
+
+/* ---- Zone de suppression de compte ---- */
+.danger-zone{margin-top:20px;padding-top:14px;border-top:1px solid #3b1d1d}
+.danger-btn{margin-top:8px;background:#2a1414;border:1px solid #7f2b2b;color:#ffb4b4}
+.danger-btn:hover{background:#3a1a1a}
