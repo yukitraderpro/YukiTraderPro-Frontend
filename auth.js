@@ -146,15 +146,17 @@ async function logOut(){
   SESSION = { user:null, accessToken:null };
 }
 
-async function resetPassword(email,newPassword){
-  if(newPassword.length < 8) throw new Error(t("errPasswordTooShort"));
-  // Le backend ne gère pas encore d'e-mail de réinitialisation (aucun
-  // service d'envoi d'e-mail n'a pu être intégré sans accès réseau/npm
-  // dans cet environnement — voir Difficultes_YukiTraderPro_V3.md). Un
-  // vrai flux "mot de passe oublié" nécessite un service d'e-mail
-  // transactionnel (ex. SendGrid/SES) et un lien à usage unique signé,
-  // à ajouter côté backend avant mise en production.
-  throw new Error(t("errResetNotAvailableServer"));
+/* Mot de passe oublié (V4.11). Le client ne choisit plus le nouveau mot de
+   passe ici : il demande l'envoi d'un lien à usage unique. Le changement
+   effectif se fait sur reinitialiser-mot-de-passe.html, une fois le jeton
+   reçu par e-mail vérifié par le backend.
+
+   La réponse du serveur est volontairement identique que le compte existe ou
+   non (anti-énumération) : on affiche donc toujours le même message. */
+async function requestPasswordReset(email){
+  if(!email || !email.includes("@")) throw new Error(t("errInvalidEmail"));
+  const res = await apiFetch("/api/auth/forgot-password", { method:"POST", body:{ email } });
+  return (res && res.message) || t("msgResetEmailSent");
 }
 
 /* Recharge l'utilisateur courant depuis le backend (source de vérité pour
@@ -203,7 +205,8 @@ const I18N = {
     newPassword:"Nouveau mot de passe",
     loginBtn:"Se connecter",
     signupBtn:"Créer mon compte",
-    resetBtn:"Réinitialiser le mot de passe",
+    resetBtn:"Envoyer le lien de réinitialisation",
+    forgotHint:"Saisissez votre adresse e-mail : nous vous enverrons un lien pour choisir un nouveau mot de passe.",
     backToLogin:"Retour à la connexion",
     noAccount:"Pas encore de compte ?",
     haveAccount:"Déjà un compte ?",
@@ -709,7 +712,9 @@ const I18N = {
     errPasswordTooShort:"Le mot de passe doit contenir au moins 8 caractères.",
     errAccountExists:"Un compte existe déjà avec cet e-mail.",
     errWrongCredentials:"E-mail ou mot de passe incorrect.",
-    errResetNotAvailableServer:"La réinitialisation de mot de passe par e-mail n'est pas encore disponible en mode serveur — contacte le support.",
+    msgResetEmailSent:"Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d'être envoyé. Pensez à vérifier vos courriers indésirables.",
+    errInvalidEmail:"Adresse e-mail invalide.",
+    resetPageTitle:"Choisir un nouveau mot de passe",
     errNoAccountFound:"Aucun compte trouvé avec cet e-mail.",
     csvFieldSymbol:"Symbole / ticker",
     csvFieldName:"Nom de l'actif",
@@ -833,7 +838,8 @@ const I18N = {
     newPassword:"New password",
     loginBtn:"Log in",
     signupBtn:"Create my account",
-    resetBtn:"Reset password",
+    resetBtn:"Send reset link",
+    forgotHint:"Enter your e-mail address: we will send you a link to choose a new password.",
     backToLogin:"Back to login",
     noAccount:"No account yet?",
     haveAccount:"Already have an account?",
@@ -1315,7 +1321,9 @@ const I18N = {
     errPasswordTooShort:"The password must be at least 8 characters long.",
     errAccountExists:"An account already exists with this email.",
     errWrongCredentials:"Incorrect email or password.",
-    errResetNotAvailableServer:"Password reset by email isn't available yet in server mode — contact support.",
+    msgResetEmailSent:"If an account exists for this address, a reset e-mail has just been sent. Please check your spam folder.",
+    errInvalidEmail:"Invalid e-mail address.",
+    resetPageTitle:"Choose a new password",
     errNoAccountFound:"No account found with this email.",
     csvFieldSymbol:"Symbol / ticker",
     csvFieldName:"Asset name",
@@ -1484,14 +1492,14 @@ function wireAuthScreen(){
   };
   document.getElementById("authMode-forgot").onsubmit = async e=>{
     e.preventDefault();
+    const errEl = document.getElementById("authError");
     try{
       const email = document.getElementById("forgotEmail").value;
-      const pw = document.getElementById("forgotNewPassword").value;
-      await resetPassword(email,pw);
-      document.getElementById("authError").style.color = "#86efac";
-      document.getElementById("authError").textContent = t("msgPasswordUpdated");
-      setTimeout(()=>{ document.getElementById("authError").style.color=""; showAuthMode("login"); },1200);
-    }catch(err){ document.getElementById("authError").textContent = err.message; }
+      const message = await requestPasswordReset(email);
+      errEl.style.color = "#86efac";
+      errEl.textContent = message;
+      setTimeout(()=>{ errEl.style.color=""; showAuthMode("login"); },4000);
+    }catch(err){ errEl.style.color=""; errEl.textContent = err.message; }
   };
   document.querySelectorAll(".lang-btn").forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
 }
