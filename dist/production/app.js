@@ -22,16 +22,26 @@ const CATALOG=[{"id":"NVDA","name":"NVIDIA","isin":"US67066G1040","type":"Action
 {"id":"VXUS","name":"Vanguard Total International Stock ETF","isin":"US9219097683","type":"ETF","sector":"Monde","market":"USA","symbol":"VXUS","xtb":"À vérifier","xtbVerified":false},
 {"id":"IEMG","name":"iShares Core MSCI Emerging Markets ETF","isin":"US46434G1031","type":"ETF","sector":"Monde","market":"USA","symbol":"IEMG","xtb":"À vérifier","xtbVerified":false}
 ],KEY_LEGACY="yuki_v7_5";
-const SCALP_IDS=["NDX","SPX","DAX","DJI","CAC","FTSE","STOXX50E","EURUSD","GBPUSD","USDJPY","AUDUSD","USDCHF","USDCAD","NZDUSD","EURJPY","GBPJPY","XAUUSD","XAGUSD","WTI","BRENT","NATGAS","BTCUSD","ETHUSD","SOLUSD","XRPUSD","ADAUSD"];
+const SCALP_IDS=["NDX","SPX","DAX","DJI","CAC","FTSE","STOXX50E","EURUSD","GBPUSD","USDJPY","AUDUSD","USDCHF","USDCAD","NZDUSD","EURJPY","GBPJPY","XAUUSD","XAGUSD","WTI","BRENT","NATGAS","BTCUSD","ETHUSD","SOLUSD","XRPUSD","ADAUSD","NVDA","AMD","INTC","AVGO","QCOM","MU","TSM","AMAT","AAPL","MSFT","GOOGL","AMZN","META","ORCL","CRM","ADBE","PLTR","TSLA","NFLX","DIS","JPM","BAC","GS","V"];
 const SCALP_PROVIDERS={
 NDX:[{symbol:"NDX"},{symbol:"QQQ",label:"proxy QQQ"}],
 SPX:[{symbol:"SPX"},{symbol:"SPY",label:"proxy SPY"}],
 DAX:[{symbol:"DAX"},{symbol:"GDAXI"},{symbol:"EXS1",exchange:"XETR",label:"proxy ETF DAX"}],
-WTI:[{symbol:"CL"},{symbol:"WTI/USD"}],
-XAUUSD:[{symbol:"XAU/USD"}],
+DJI:[{symbol:"DJI"},{symbol:"DIA",label:"proxy DIA"}],
+CAC:[{symbol:"CAC"},{symbol:"FCHI"},{symbol:"EWQ",label:"proxy EWQ"}],
+FTSE:[{symbol:"FTSE"},{symbol:"UKX"},{symbol:"EWU",label:"proxy EWU"}],
+STOXX50E:[{symbol:"STOXX50E"},{symbol:"SX5E"},{symbol:"FEZ",label:"proxy FEZ"}],
+WTI:[{symbol:"CL"},{symbol:"WTI/USD"},{symbol:"USO",label:"proxy USO"}],
+BRENT:[{symbol:"BZ"},{symbol:"BRENT/USD"},{symbol:"BNO",label:"proxy BNO"}],
+NATGAS:[{symbol:"NG"},{symbol:"UNG",label:"proxy UNG"}],
+XAUUSD:[{symbol:"XAU/USD"},{symbol:"GLD",label:"proxy GLD"}],
+XAGUSD:[{symbol:"XAG/USD"},{symbol:"SLV",label:"proxy SLV"}],
 EURUSD:[{symbol:"EUR/USD"}], GBPUSD:[{symbol:"GBP/USD"}], USDJPY:[{symbol:"USD/JPY"}],
 AUDUSD:[{symbol:"AUD/USD"}], USDCHF:[{symbol:"USD/CHF"}],
-BTCUSD:[{symbol:"BTC/USD"}], ETHUSD:[{symbol:"ETH/USD"}]
+USDCAD:[{symbol:"USD/CAD"}], NZDUSD:[{symbol:"NZD/USD"}],
+EURJPY:[{symbol:"EUR/JPY"}], GBPJPY:[{symbol:"GBP/JPY"}],
+BTCUSD:[{symbol:"BTC/USD"}], ETHUSD:[{symbol:"ETH/USD"}],
+SOLUSD:[{symbol:"SOL/USD"}], XRPUSD:[{symbol:"XRP/USD"}], ADAUSD:[{symbol:"ADA/USD"}]
 };
 const SCALP_ANALYSIS_MS=60000, SCALP_POSITION_MS=15000;
 const $=id=>document.getElementById(id);

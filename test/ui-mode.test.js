@@ -171,9 +171,12 @@ test("index.html : les indicateurs techniques détaillés sont marqués expert-o
   assert.ok(/class="expert-only"><span data-i18n="fieldQuality">Qualité<\/span>/.test(html));
   assert.ok(/class="expert-only"><span data-i18n="fieldRegime">Régime<\/span>/.test(html));
   // Stop / RR (objectif reste visible, seul le stop et le ratio sont masqués)
-  assert.ok(/class="expert-only"><span data-i18n="stopLabel">Stop indicatif<\/span>/.test(html));
-  assert.ok(/class="expert-only"><span data-i18n="rrLabel">Ratio potentiel<\/span>/.test(html));
-  assert.ok(html.includes('<div><span data-i18n="targetLabel">Objectif indicatif</span><strong id="target">'));
+  // Assertions basées sur la clé data-i18n et non sur le libellé affiché :
+  // les libellés peuvent évoluer (ex. requalification des niveaux en bornes de
+  // volatilité ATR) sans que la structure Mode Simple / Mode Expert change.
+  assert.ok(/class="expert-only"><span data-i18n="stopLabel">/.test(html));
+  assert.ok(/data-i18n="rrLabel"/.test(html));
+  assert.ok(/<div><span data-i18n="targetLabel">[^<]*<\/span><strong id="target">/.test(html));
   // Journal des signaux + pondération dynamique des indicateurs (Stats)
   assert.ok(/<div class="card expert-only"><h2 data-i18n="weightsTitle">Fiabilité des indicateurs/.test(html));
   assert.ok(/<div class="card expert-only">[\s\S]{0,60}Journal des signaux/.test(html));

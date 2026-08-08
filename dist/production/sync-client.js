@@ -10,7 +10,11 @@ if (!enabled()) return;
 try {
 const result = await apiFetch("/api/sync/state", { method: "GET", email: currentEmail });
 if (result && result.state && typeof state === "object" && state) {
-Object.assign(state, result.state);
+const localApiKey = state.apiKey;
+const incoming = Object.assign({}, result.state);
+delete incoming.apiKey;
+Object.assign(state, incoming);
+state.apiKey = localApiKey;
 if (typeof window.save === "function") window.save();
 if (typeof window.populate === "function") window.populate();
 console.info("[YukiSync] État restauré depuis le cloud (version " + result.version + ").");
@@ -19,10 +23,15 @@ console.info("[YukiSync] État restauré depuis le cloud (version " + result.ver
 console.warn("[YukiSync] Récupération cloud impossible (mode hors-ligne ?)", e.message);
 }
 }
+function sanitizeForCloud(src) {
+const copy = Object.assign({}, src);
+delete copy.apiKey;
+return copy;
+}
 async function push() {
 if (!enabled() || typeof state !== "object" || !state) return;
 try {
-await apiFetch("/api/sync/state", { method: "PUT", email: currentEmail, body: { state } });
+await apiFetch("/api/sync/state", { method: "PUT", email: currentEmail, body: { state: sanitizeForCloud(state) } });
 } catch (e) {
 console.warn("[YukiSync] Envoi cloud impossible (mode hors-ligne ?)", e.message);
 }
